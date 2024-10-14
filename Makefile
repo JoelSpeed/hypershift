@@ -13,6 +13,7 @@ TOOLS_DIR=./hack/tools
 BIN_DIR=bin
 TOOLS_BIN_DIR := $(TOOLS_DIR)/$(BIN_DIR)
 CONTROLLER_GEN := $(abspath $(TOOLS_BIN_DIR)/controller-gen)
+CODE_GEN := $(abspath $(TOOLS_BIN_DIR)/codegen)
 STATICCHECK := $(abspath $(TOOLS_BIN_DIR)/staticcheck)
 GENAPIDOCS := $(abspath $(TOOLS_BIN_DIR)/gen-crd-api-reference-docs)
 
@@ -62,6 +63,10 @@ verify: update staticcheck fmt vet
 $(CONTROLLER_GEN): $(TOOLS_DIR)/go.mod # Build controller-gen from tools folder.
 	cd $(TOOLS_DIR); GO111MODULE=on GOFLAGS=-mod=vendor GOWORK=off go build -tags=tools -o $(BIN_DIR)/controller-gen sigs.k8s.io/controller-tools/cmd/controller-gen
 
+$(CODE_GEN): $(TOOLS_DIR)/go.mod # Build code-gen from tools folder.
+	cd $(TOOLS_DIR); GO111MODULE=on GOFLAGS=-mod=vendor GOWORK=off go build -tags=tools -o $(BIN_DIR)/codegen github.com/openshift/api/tools/codegen/cmd
+
+
 $(STATICCHECK): $(TOOLS_DIR)/go.mod # Build staticcheck from tools folder.
 	cd $(TOOLS_DIR); GO111MODULE=on GOFLAGS=-mod=vendor GOWORK=off go build -tags=tools -o $(BIN_DIR)/staticcheck honnef.co/go/tools/cmd/staticcheck
 
@@ -100,10 +105,12 @@ product-cli:
 api: hypershift-api cluster-api cluster-api-provider-aws cluster-api-provider-ibmcloud cluster-api-provider-kubevirt cluster-api-provider-agent cluster-api-provider-azure cluster-api-provider-openstack api-docs
 
 .PHONY: hypershift-api
-hypershift-api: $(CONTROLLER_GEN)
+hypershift-api: $(CONTROLLER_GEN) $(CODE_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..."
 	rm -rf cmd/install/assets/hypershift-operator/*.yaml
-	$(CONTROLLER_GEN) schemapatch:manifests="./cmd/install/assets/hypershift-operator" paths="./api/..." output:dir=cmd/install/assets/hypershift-operator
+	$(CODE_GEN) empty-partial-schemas --base-dir ./api/hypershift/v1beta1
+	$(CODE_GEN) schemapatch --base-dir ./api/hypershift/v1beta1
+	 #$(CONTROLLER_GEN) schemapatch:manifests="./api/v1beta1" paths="./api/v1beta1/..." output:dir=cmd/install/assets/hypershift-operator
 	# $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./api/..." output:crd:artifacts:config=cmd/install/assets/hypershift-operator
 
 .PHONY: cluster-api
