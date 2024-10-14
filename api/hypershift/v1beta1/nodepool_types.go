@@ -410,6 +410,8 @@ type NodePoolPlatform struct {
 	// +unionDiscriminator
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="Type is immutable"
 	// +immutable
+	// +openshift:validation:FeatureGateAwareEnum:featureGate="",enum="";foo
+	// +openshift:validation:FeatureGateAwareEnum:featureGate=OpenStack,enum="";bar;bar2
 	Type PlatformType `json:"type"`
 
 	// AWS specifies the configuration used when operating on AWS.

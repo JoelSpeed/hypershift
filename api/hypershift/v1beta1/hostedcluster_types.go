@@ -851,8 +851,6 @@ const (
 )
 
 // PlatformType is a specific supported infrastructure provider.
-//
-// +kubebuilder:validation:Enum=AWS;None;IBMCloud;Agent;KubeVirt;Azure;PowerVS;OpenStack
 type PlatformType string
 
 const (
