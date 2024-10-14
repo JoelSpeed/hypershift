@@ -110,6 +110,7 @@ hypershift-api: $(CONTROLLER_GEN) $(CODE_GEN)
 	rm -rf cmd/install/assets/hypershift-operator/*.yaml
 	$(CODE_GEN) empty-partial-schemas --base-dir ./api/hypershift/v1beta1
 	$(CODE_GEN) schemapatch --base-dir ./api/hypershift/v1beta1
+	$(CODE_GEN) crd-manifest-merge --manifest-merge:payload-manifest-path ./cmd/install/assets/hypershift/featuregates/ --base-dir ./api/hypershift/v1beta1
 	 #$(CONTROLLER_GEN) schemapatch:manifests="./api/v1beta1" paths="./api/v1beta1/..." output:dir=cmd/install/assets/hypershift-operator
 	# $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./api/..." output:crd:artifacts:config=cmd/install/assets/hypershift-operator
 
