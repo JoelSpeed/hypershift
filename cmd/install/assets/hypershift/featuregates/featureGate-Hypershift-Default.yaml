@@ -8,7 +8,9 @@
         "creationTimestamp": null,
         "name": "cluster"
     },
-    "spec": {},
+    "spec": {
+      "featureSet": ""
+    },
     "status": {
         "featureGates": [
             {
