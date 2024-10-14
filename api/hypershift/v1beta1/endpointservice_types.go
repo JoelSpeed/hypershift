@@ -93,6 +93,7 @@ type AWSEndpointService struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=awsendpointserviceslist,scope=Namespaced
 // AWSEndpointServiceList contains a list of AWSEndpointService
 type AWSEndpointServiceList struct {
 	metav1.TypeMeta `json:",inline"`

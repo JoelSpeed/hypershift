@@ -222,7 +222,7 @@ type NodePoolStatus struct {
 }
 
 // NodePoolList contains a list of NodePools.
-//
+// +kubebuilder:resource:path=nodepoolslist,scope=Namespaced
 // +kubebuilder:object:root=true
 type NodePoolList struct {
 	metav1.TypeMeta `json:",inline"`

@@ -314,6 +314,7 @@ type APIEndpoint struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=hostedcontrolplaneslist,scope=Namespaced
 // HostedControlPlaneList contains a list of HostedControlPlanes.
 type HostedControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`

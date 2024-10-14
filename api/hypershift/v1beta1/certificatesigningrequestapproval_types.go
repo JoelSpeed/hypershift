@@ -25,7 +25,7 @@ type CertificateSigningRequestApprovalSpec struct{}
 type CertificateSigningRequestApprovalStatus struct{}
 
 // +kubebuilder:object:root=true
-
+// +kubebuilder:resource:path=certificatesigningrequestapprovalslist,scope=Namespaced
 // CertificateSigningRequestApprovalList contains a list of CertificateSigningRequestApprovals.
 type CertificateSigningRequestApprovalList struct {
 	metav1.TypeMeta `json:",inline"`

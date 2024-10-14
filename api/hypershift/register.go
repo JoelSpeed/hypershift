@@ -1,3 +1,3 @@
 package hypershift
 
-const GroupName = "hypershift.openshift.io"
+var GroupName = "hypershift.openshift.io"

@@ -1,0 +1,18 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    feature-gate.release.openshift.io/: "true"
+  name: awsendpointserviceslist.hypershift.openshift.io
+spec:
+  group: hypershift.openshift.io
+  names:
+    kind: AWSEndpointServiceList
+    listKind: AWSEndpointServiceListList
+    plural: awsendpointserviceslist
+    singular: awsendpointservicelist
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true

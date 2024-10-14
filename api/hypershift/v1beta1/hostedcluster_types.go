@@ -2952,6 +2952,7 @@ type HostedCluster struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=hostedclusterslist,scope=Namespaced
 // HostedClusterList contains a list of HostedCluster
 type HostedClusterList struct {
 	metav1.TypeMeta `json:",inline"`
