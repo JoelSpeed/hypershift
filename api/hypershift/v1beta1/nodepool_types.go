@@ -442,6 +442,7 @@ type NodePoolPlatform struct {
 	// OpenStack specifies the configuration used when using OpenStack platform.
 	//
 	// +optional
+	// +openshift:enable:FeatureGate=OpenStack
 	OpenStack *OpenStackNodePoolPlatform `json:"openstack,omitempty"`
 }
 
