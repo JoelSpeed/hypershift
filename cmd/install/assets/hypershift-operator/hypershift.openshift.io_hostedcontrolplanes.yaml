@@ -55,9 +55,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -102,9 +100,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -140,7 +136,6 @@ spec:
                       PodPriorityThreshold enables users to schedule "best-effort" pods, which
                       shouldn't trigger autoscaler actions, but only run when there are spare
                       resources available. The default is -10.
-
 
                       See the following for more details:
                       https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#how-does-cluster-autoscaler-work-with-pod-priority-and-preemption
@@ -208,7 +203,6 @@ spec:
                                     profile specifies the name of the desired audit policy configuration to be deployed to
                                     all OpenShift-provided API servers in the cluster.
 
-
                                     The following profiles are provided:
                                     - Default: the existing default policy.
                                     - WriteRequestBodies: like 'Default', but logs request and response HTTP payloads for
@@ -216,7 +210,6 @@ spec:
                                     - AllRequestBodies: like 'WriteRequestBodies', but also logs request and response
                                     HTTP payloads for read requests (get, list).
                                     - None: no requests are logged at all, not even oauthaccesstokens and oauthauthorizetokens.
-
 
                                     If unset, the 'Default' profile is used as the default.
                                   enum:
@@ -241,7 +234,6 @@ spec:
                               openshift-apiserver and oauth-apiserver), with the exception of those requests that match
                               one or more of the customRules.
 
-
                               The following profiles are provided:
                               - Default: default policy which means MetaData level logging with the exception of events
                                 (not logged at all), oauthaccesstokens and oauthauthorizetokens (both logged at RequestBody
@@ -252,12 +244,10 @@ spec:
                               HTTP payloads for read requests (get, list).
                               - None: no requests are logged at all, not even oauthaccesstokens and oauthauthorizetokens.
 
-
                               Warning: It is not recommended to disable audit logging by using the `None` profile unless you
                               are fully aware of the risks of not logging data that can be beneficial when troubleshooting issues.
                               If you disable audit logging and a support situation arises, you might need to enable audit logging
                               and reproduce the issue in order to troubleshoot properly.
-
 
                               If unset, the 'Default' profile is used as the default.
                             enum:
@@ -293,10 +283,8 @@ spec:
                               The behavior of unset can and will change over time.  Even if encryption is enabled by default,
                               the meaning of unset may change to a different encryption type based on changes in best practices.
 
-
                               When encryption is enabled, all sensitive resources shipped with the platform are encrypted.
                               This list of sensitive resources can and will change over time.  The current authoritative list is:
-
 
                                 1. secrets
                                 2. configmaps
@@ -353,7 +341,6 @@ spec:
                         description: |-
                           tlsSecurityProfile specifies settings for TLS connections for externally exposed servers.
 
-
                           If unset, a default (which may change between releases) is chosen. Note that only Old,
                           Intermediate and Custom profiles are currently supported, and the maximum available
                           minTLSVersion is VersionTLS12.
@@ -364,21 +351,15 @@ spec:
                               profile as invalid configurations can be catastrophic. An example custom profile
                               looks like this:
 
-
                                 ciphers:
-
 
                                   - ECDHE-ECDSA-CHACHA20-POLY1305
 
-
                                   - ECDHE-RSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-RSA-AES128-GCM-SHA256
 
-
                                   - ECDHE-ECDSA-AES128-GCM-SHA256
-
 
                                 minTLSVersion: VersionTLS11
                             nullable: true
@@ -388,7 +369,6 @@ spec:
                                   ciphers is used to specify the cipher algorithms that are negotiated
                                   during the TLS handshake.  Operators may remove entries their operands
                                   do not support.  For example, to use DES-CBC3-SHA  (yaml):
-
 
                                     ciphers:
                                       - DES-CBC3-SHA
@@ -401,9 +381,7 @@ spec:
                                   that is negotiated during the TLS handshake. For example, to use TLS
                                   versions 1.1, 1.2 and 1.3 (yaml):
 
-
                                     minTLSVersion: VersionTLS11
-
 
                                   NOTE: currently the highest minTLSVersion allowed is VersionTLS12
                                 enum:
@@ -417,48 +395,33 @@ spec:
                             description: |-
                               intermediate is a TLS security profile based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
-
 
                               and looks like this (yaml):
 
-
                                 ciphers:
-
 
                                   - TLS_AES_128_GCM_SHA256
 
-
                                   - TLS_AES_256_GCM_SHA384
-
 
                                   - TLS_CHACHA20_POLY1305_SHA256
 
-
                                   - ECDHE-ECDSA-AES128-GCM-SHA256
-
 
                                   - ECDHE-RSA-AES128-GCM-SHA256
 
-
                                   - ECDHE-ECDSA-AES256-GCM-SHA384
-
 
                                   - ECDHE-RSA-AES256-GCM-SHA384
 
-
                                   - ECDHE-ECDSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-RSA-CHACHA20-POLY1305
 
-
                                   - DHE-RSA-AES128-GCM-SHA256
 
-
                                   - DHE-RSA-AES256-GCM-SHA384
-
 
                                 minTLSVersion: VersionTLS12
                             nullable: true
@@ -467,24 +430,17 @@ spec:
                             description: |-
                               modern is a TLS security profile based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility
-
 
                               and looks like this (yaml):
 
-
                                 ciphers:
-
 
                                   - TLS_AES_128_GCM_SHA256
 
-
                                   - TLS_AES_256_GCM_SHA384
 
-
                                   - TLS_CHACHA20_POLY1305_SHA256
-
 
                                 minTLSVersion: VersionTLS13
                             nullable: true
@@ -493,102 +449,69 @@ spec:
                             description: |-
                               old is a TLS security profile based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility
-
 
                               and looks like this (yaml):
 
-
                                 ciphers:
-
 
                                   - TLS_AES_128_GCM_SHA256
 
-
                                   - TLS_AES_256_GCM_SHA384
-
 
                                   - TLS_CHACHA20_POLY1305_SHA256
 
-
                                   - ECDHE-ECDSA-AES128-GCM-SHA256
-
 
                                   - ECDHE-RSA-AES128-GCM-SHA256
 
-
                                   - ECDHE-ECDSA-AES256-GCM-SHA384
-
 
                                   - ECDHE-RSA-AES256-GCM-SHA384
 
-
                                   - ECDHE-ECDSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-RSA-CHACHA20-POLY1305
 
-
                                   - DHE-RSA-AES128-GCM-SHA256
-
 
                                   - DHE-RSA-AES256-GCM-SHA384
 
-
                                   - DHE-RSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-ECDSA-AES128-SHA256
 
-
                                   - ECDHE-RSA-AES128-SHA256
-
 
                                   - ECDHE-ECDSA-AES128-SHA
 
-
                                   - ECDHE-RSA-AES128-SHA
-
 
                                   - ECDHE-ECDSA-AES256-SHA384
 
-
                                   - ECDHE-RSA-AES256-SHA384
-
 
                                   - ECDHE-ECDSA-AES256-SHA
 
-
                                   - ECDHE-RSA-AES256-SHA
-
 
                                   - DHE-RSA-AES128-SHA256
 
-
                                   - DHE-RSA-AES256-SHA256
-
 
                                   - AES128-GCM-SHA256
 
-
                                   - AES256-GCM-SHA384
-
 
                                   - AES128-SHA256
 
-
                                   - AES256-SHA256
-
 
                                   - AES128-SHA
 
-
                                   - AES256-SHA
 
-
                                   - DES-CBC3-SHA
-
 
                                 minTLSVersion: VersionTLS10
                             nullable: true
@@ -599,14 +522,11 @@ spec:
                               the ability to specify individual TLS security profile parameters.
                               Old, Intermediate and Modern are TLS security profiles based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations
-
 
                               The profiles are intent based, so they may change over time as new ciphers are developed and existing ciphers
                               are found to be insecure.  Depending on precisely which ciphers are available to a process, the list may be
                               reduced.
-
 
                               Note that the Modern profile is currently not supported because it is not
                               yet well adopted by common software libraries.
@@ -645,250 +565,6 @@ spec:
                         required:
                         - name
                         type: object
-                      oidcProviders:
-                        description: |-
-                          OIDCProviders are OIDC identity providers that can issue tokens
-                          for this cluster
-                          Can only be set if "Type" is set to "OIDC".
-
-
-                          At most one provider can be configured.
-                        items:
-                          properties:
-                            claimMappings:
-                              description: |-
-                                ClaimMappings describes rules on how to transform information from an
-                                ID token into a cluster identity
-                              properties:
-                                groups:
-                                  description: |-
-                                    Groups is a name of the claim that should be used to construct
-                                    groups for the cluster identity.
-                                    The referenced claim must use array of strings values.
-                                  properties:
-                                    claim:
-                                      description: Claim is a JWT token claim to be
-                                        used in the mapping
-                                      type: string
-                                    prefix:
-                                      description: |-
-                                        Prefix is a string to prefix the value from the token in the result of the
-                                        claim mapping.
-
-
-                                        By default, no prefixing occurs.
-
-
-                                        Example: if `prefix` is set to "myoidc:"" and the `claim` in JWT contains
-                                        an array of strings "a", "b" and  "c", the mapping will result in an
-                                        array of string "myoidc:a", "myoidc:b" and "myoidc:c".
-                                      type: string
-                                  required:
-                                  - claim
-                                  type: object
-                                username:
-                                  description: |-
-                                    Username is a name of the claim that should be used to construct
-                                    usernames for the cluster identity.
-
-
-                                    Default value: "sub"
-                                  properties:
-                                    claim:
-                                      description: Claim is a JWT token claim to be
-                                        used in the mapping
-                                      type: string
-                                    prefix:
-                                      properties:
-                                        prefixString:
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                      - prefixString
-                                      type: object
-                                    prefixPolicy:
-                                      description: |-
-                                        PrefixPolicy specifies how a prefix should apply.
-
-
-                                        By default, claims other than `email` will be prefixed with the issuer URL to
-                                        prevent naming clashes with other plugins.
-
-
-                                        Set to "NoPrefix" to disable prefixing.
-
-
-                                        Example:
-                                            (1) `prefix` is set to "myoidc:" and `claim` is set to "username".
-                                                If the JWT claim `username` contains value `userA`, the resulting
-                                                mapped value will be "myoidc:userA".
-                                            (2) `prefix` is set to "myoidc:" and `claim` is set to "email". If the
-                                                JWT `email` claim contains value "userA@myoidc.tld", the resulting
-                                                mapped value will be "myoidc:userA@myoidc.tld".
-                                            (3) `prefix` is unset, `issuerURL` is set to `https://myoidc.tld`,
-                                                the JWT claims include "username":"userA" and "email":"userA@myoidc.tld",
-                                                and `claim` is set to:
-                                                (a) "username": the mapped value will be "https://myoidc.tld#userA"
-                                                (b) "email": the mapped value will be "userA@myoidc.tld"
-                                      enum:
-                                      - ""
-                                      - NoPrefix
-                                      - Prefix
-                                      type: string
-                                  required:
-                                  - claim
-                                  type: object
-                                  x-kubernetes-validations:
-                                  - message: prefix must be set if prefixPolicy is
-                                      'Prefix', but must remain unset otherwise
-                                    rule: 'has(self.prefixPolicy) && self.prefixPolicy
-                                      == ''Prefix'' ? (has(self.prefix) && size(self.prefix.prefixString)
-                                      > 0) : !has(self.prefix)'
-                              type: object
-                            claimValidationRules:
-                              description: ClaimValidationRules are rules that are
-                                applied to validate token claims to authenticate users.
-                              items:
-                                properties:
-                                  requiredClaim:
-                                    description: |-
-                                      RequiredClaim allows configuring a required claim name and its expected
-                                      value
-                                    properties:
-                                      claim:
-                                        description: |-
-                                          Claim is a name of a required claim. Only claims with string values are
-                                          supported.
-                                        minLength: 1
-                                        type: string
-                                      requiredValue:
-                                        description: RequiredValue is the required
-                                          value for the claim.
-                                        minLength: 1
-                                        type: string
-                                    required:
-                                    - claim
-                                    - requiredValue
-                                    type: object
-                                  type:
-                                    default: RequiredClaim
-                                    description: Type sets the type of the validation
-                                      rule
-                                    enum:
-                                    - RequiredClaim
-                                    type: string
-                                type: object
-                              type: array
-                              x-kubernetes-list-type: atomic
-                            issuer:
-                              description: Issuer describes atributes of the OIDC
-                                token issuer
-                              properties:
-                                audiences:
-                                  description: |-
-                                    Audiences is an array of audiences that the token was issued for.
-                                    Valid tokens must include at least one of these values in their
-                                    "aud" claim.
-                                    Must be set to exactly one value.
-                                  items:
-                                    minLength: 1
-                                    type: string
-                                  maxItems: 10
-                                  minItems: 1
-                                  type: array
-                                  x-kubernetes-list-type: set
-                                issuerCertificateAuthority:
-                                  description: |-
-                                    CertificateAuthority is a reference to a config map in the
-                                    configuration namespace. The .data of the configMap must contain
-                                    the "ca-bundle.crt" key.
-                                    If unset, system trust is used instead.
-                                  properties:
-                                    name:
-                                      description: name is the metadata.name of the
-                                        referenced config map
-                                      type: string
-                                  required:
-                                  - name
-                                  type: object
-                                issuerURL:
-                                  description: |-
-                                    URL is the serving URL of the token issuer.
-                                    Must use the https:// scheme.
-                                  pattern: ^https:\/\/[^\s]
-                                  type: string
-                              required:
-                              - audiences
-                              - issuerURL
-                              type: object
-                            name:
-                              description: Name of the OIDC provider
-                              minLength: 1
-                              type: string
-                            oidcClients:
-                              description: |-
-                                OIDCClients contains configuration for the platform's clients that
-                                need to request tokens from the issuer
-                              items:
-                                properties:
-                                  clientID:
-                                    description: ClientID is the identifier of the
-                                      OIDC client from the OIDC provider
-                                    minLength: 1
-                                    type: string
-                                  clientSecret:
-                                    description: |-
-                                      ClientSecret refers to a secret in the `openshift-config` namespace that
-                                      contains the client secret in the `clientSecret` key of the `.data` field
-                                    properties:
-                                      name:
-                                        description: name is the metadata.name of
-                                          the referenced secret
-                                        type: string
-                                    required:
-                                    - name
-                                    type: object
-                                  componentName:
-                                    description: |-
-                                      ComponentName is the name of the component that is supposed to consume this
-                                      client configuration
-                                    maxLength: 256
-                                    minLength: 1
-                                    type: string
-                                  componentNamespace:
-                                    description: |-
-                                      ComponentNamespace is the namespace of the component that is supposed to consume this
-                                      client configuration
-                                    maxLength: 63
-                                    minLength: 1
-                                    type: string
-                                  extraScopes:
-                                    description: ExtraScopes is an optional set of
-                                      scopes to request tokens with.
-                                    items:
-                                      type: string
-                                    type: array
-                                    x-kubernetes-list-type: set
-                                required:
-                                - clientID
-                                - componentName
-                                - componentNamespace
-                                type: object
-                              maxItems: 20
-                              type: array
-                              x-kubernetes-list-map-keys:
-                              - componentNamespace
-                              - componentName
-                              x-kubernetes-list-type: map
-                          required:
-                          - issuer
-                          - name
-                          type: object
-                        maxItems: 1
-                        type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
                       serviceAccountIssuer:
                         description: |-
                           serviceAccountIssuer is the identifier of the bound service account token
@@ -913,7 +589,6 @@ spec:
                           via the tokenreviews.authentication.k8s.io REST API. This is required to
                           honor bearer tokens that are provisioned by an external authentication service.
 
-
                           Can only be set if "Type" is set to "None".
                         properties:
                           kubeConfig:
@@ -922,12 +597,9 @@ spec:
                               describes how to access the remote webhook service.
                               The namespace for the referenced secret is openshift-config.
 
-
                               For further details, see:
 
-
                               https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication
-
 
                               The key "kubeConfig" is used to locate the data.
                               If the secret or expected key is not found, the webhook is not honored.
@@ -978,7 +650,6 @@ spec:
                       configuration entries. Entries can reference the configmaps using local
                       object references.
 
-
                       Deprecated
                       This field is deprecated and will be removed in a future release
                     items:
@@ -993,9 +664,7 @@ spec:
                             This field is effectively required, but due to backwards compatibility is
                             allowed to be empty. Instances of this type with an empty value here are
                             almost certainly wrong.
-                            TODO: Add other useful fields. apiVersion, kind, uid?
                             More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                           type: string
                       type: object
                       x-kubernetes-map-type: atomic
@@ -1115,7 +784,6 @@ spec:
                             description: |-
                               allowedRegistries are the only registries permitted for image pull and push actions. All other registries are denied.
 
-
                               Only one of BlockedRegistries or AllowedRegistries may be set.
                             items:
                               type: string
@@ -1123,7 +791,6 @@ spec:
                           blockedRegistries:
                             description: |-
                               blockedRegistries cannot be used for image pull and push actions. All other registries are permitted.
-
 
                               Only one of BlockedRegistries or AllowedRegistries may be set.
                             items:
@@ -1171,7 +838,6 @@ spec:
                           The namespace and name of each route in this list should match an existing entry in the
                           status.componentRoutes list.
 
-
                           To determine the set of configurable Routes, look at namespace and name of entries in the
                           .status.componentRoutes list, where participating operators write the status of
                           configurable routes.
@@ -1188,7 +854,6 @@ spec:
                               description: |-
                                 name is the logical name of the route to customize.
 
-
                                 The namespace and name of this componentRoute must match a corresponding
                                 entry in the list of status.componentRoutes if the route is to be customized.
                               maxLength: 256
@@ -1197,7 +862,6 @@ spec:
                             namespace:
                               description: |-
                                 namespace is the namespace of the route to customize.
-
 
                                 The namespace and name of this componentRoute must match a corresponding
                                 entry in the list of status.componentRoutes if the route is to be customized.
@@ -1235,10 +899,8 @@ spec:
                           route's host name is empty. The generated host name will follow this
                           pattern: "<route-name>.<route-namespace>.<domain>".
 
-
                           It is also used as the default wildcard domain suffix for ingress. The
                           default ingresscontroller domain will follow this pattern: "*.<domain>".
-
 
                           Once set, changing domain is not currently supported.
                         type: string
@@ -1265,18 +927,14 @@ spec:
                                       If this field is not set then the default ingress controller of LBType Classic will be created.
                                       Valid values are:
 
-
                                       * "Classic": A Classic Load Balancer that makes routing decisions at either
                                         the transport layer (TCP/SSL) or the application layer (HTTP/HTTPS). See
                                         the following for additional details:
 
-
                                           https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html#clb
-
 
                                       * "NLB": A Network Load Balancer that makes routing decisions at the
                                         transport layer (TCP/SSL). See the following for additional details:
-
 
                                           https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html#nlb
                                     enum:
@@ -1321,11 +979,9 @@ spec:
                           Each requiredHSTSPolicy must have at least a domainPattern and a maxAge to validate a route HSTS Policy route
                           annotation, and affect route admission.
 
-
                           A candidate route is checked for HSTS Policies if it has the HSTS Policy route annotation:
                           "haproxy.router.openshift.io/hsts_header"
                           E.g. haproxy.router.openshift.io/hsts_header: max-age=31536000;preload;includeSubDomains
-
 
                           - For each candidate route, if it matches a requiredHSTSPolicy domainPattern and optional namespaceSelector,
                           then the maxAge, preloadPolicy, and includeSubdomainsPolicy must be valid to be admitted.  Otherwise, the route
@@ -1335,11 +991,9 @@ spec:
                           - If the candidate route doesn't match any requiredHSTSPolicy domainPattern and optional namespaceSelector,
                           then it may use any HSTS Policy annotation.
 
-
                           The HSTS policy configuration may be changed after routes have already been created. An update to a previously
                           admitted route may then fail if the updated route does not conform to the updated HSTS policy configuration.
                           However, changing the HSTS policy configuration will not cause a route that is already admitted to stop working.
-
 
                           Note that if there are no RequiredHSTSPolicies, any HSTS Policy annotation on the route is valid.
                         items:
@@ -1349,7 +1003,6 @@ spec:
                                 domainPatterns is a list of domains for which the desired HSTS annotations are required.
                                 If domainPatterns is specified and a route is created with a spec.host matching one of the domains,
                                 the route must specify the HSTS Policy components described in the matching RequiredHSTSPolicy.
-
 
                                 The use of wildcards is allowed like this: *.foo.com matches everything under foo.com.
                                 foo.com only matches foo.com, so to cover foo.com and everything under it, you must specify *both*.
@@ -1465,7 +1118,6 @@ spec:
                     description: |-
                       Items embeds the serialized configuration resources.
 
-
                       Deprecated
                       This field is deprecated and will be removed in a future release
                     items:
@@ -1477,7 +1129,6 @@ spec:
                     description: |-
                       Network holds cluster-wide information about the network. It is used to configure the desired network configuration, such as: IP address pools for services/pod IPs, network plugin, etc.
                       Please view network.spec for an explanation on what applies when configuring this resource.
-                      TODO (csrwng): Add validation here to exclude changes that conflict with networking settings in the HostedCluster.Spec.Networking field.
                     properties:
                       clusterNetwork:
                         description: |-
@@ -1537,160 +1188,6 @@ spec:
                                   over allowedCIDRs.
                                 items:
                                   type: string
-                                type: array
-                                x-kubernetes-list-type: atomic
-                            type: object
-                        type: object
-                      networkDiagnostics:
-                        description: |-
-                          networkDiagnostics defines network diagnostics configuration.
-
-
-                          Takes precedence over spec.disableNetworkDiagnostics in network.operator.openshift.io.
-                          If networkDiagnostics is not specified or is empty,
-                          and the spec.disableNetworkDiagnostics flag in network.operator.openshift.io is set to true,
-                          the network diagnostics feature will be disabled.
-                        properties:
-                          mode:
-                            description: |-
-                              mode controls the network diagnostics mode
-
-
-                              When omitted, this means the user has no opinion and the platform is left
-                              to choose reasonable defaults. These defaults are subject to change over time.
-                              The current default is All.
-                            enum:
-                            - ""
-                            - All
-                            - Disabled
-                            type: string
-                          sourcePlacement:
-                            description: |-
-                              sourcePlacement controls the scheduling of network diagnostics source deployment
-
-
-                              See NetworkDiagnosticsSourcePlacement for more details about default values.
-                            properties:
-                              nodeSelector:
-                                additionalProperties:
-                                  type: string
-                                description: |-
-                                  nodeSelector is the node selector applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is `kubernetes.io/os: linux`.
-                                type: object
-                              tolerations:
-                                description: |-
-                                  tolerations is a list of tolerations applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is an empty list.
-                                items:
-                                  description: |-
-                                    The pod this Toleration is attached to tolerates any taint that matches
-                                    the triple <key,value,effect> using the matching operator <operator>.
-                                  properties:
-                                    effect:
-                                      description: |-
-                                        Effect indicates the taint effect to match. Empty means match all taint effects.
-                                        When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-                                      type: string
-                                    key:
-                                      description: |-
-                                        Key is the taint key that the toleration applies to. Empty means match all taint keys.
-                                        If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-                                      type: string
-                                    operator:
-                                      description: |-
-                                        Operator represents a key's relationship to the value.
-                                        Valid operators are Exists and Equal. Defaults to Equal.
-                                        Exists is equivalent to wildcard for value, so that a pod can
-                                        tolerate all taints of a particular category.
-                                      type: string
-                                    tolerationSeconds:
-                                      description: |-
-                                        TolerationSeconds represents the period of time the toleration (which must be
-                                        of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-                                        it is not set, which means tolerate the taint forever (do not evict). Zero and
-                                        negative values will be treated as 0 (evict immediately) by the system.
-                                      format: int64
-                                      type: integer
-                                    value:
-                                      description: |-
-                                        Value is the taint value the toleration matches to.
-                                        If the operator is Exists, the value should be empty, otherwise just a regular string.
-                                      type: string
-                                  type: object
-                                type: array
-                                x-kubernetes-list-type: atomic
-                            type: object
-                          targetPlacement:
-                            description: |-
-                              targetPlacement controls the scheduling of network diagnostics target daemonset
-
-
-                              See NetworkDiagnosticsTargetPlacement for more details about default values.
-                            properties:
-                              nodeSelector:
-                                additionalProperties:
-                                  type: string
-                                description: |-
-                                  nodeSelector is the node selector applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is `kubernetes.io/os: linux`.
-                                type: object
-                              tolerations:
-                                description: |-
-                                  tolerations is a list of tolerations applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is `- operator: "Exists"` which means that all taints are tolerated.
-                                items:
-                                  description: |-
-                                    The pod this Toleration is attached to tolerates any taint that matches
-                                    the triple <key,value,effect> using the matching operator <operator>.
-                                  properties:
-                                    effect:
-                                      description: |-
-                                        Effect indicates the taint effect to match. Empty means match all taint effects.
-                                        When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-                                      type: string
-                                    key:
-                                      description: |-
-                                        Key is the taint key that the toleration applies to. Empty means match all taint keys.
-                                        If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-                                      type: string
-                                    operator:
-                                      description: |-
-                                        Operator represents a key's relationship to the value.
-                                        Valid operators are Exists and Equal. Defaults to Equal.
-                                        Exists is equivalent to wildcard for value, so that a pod can
-                                        tolerate all taints of a particular category.
-                                      type: string
-                                    tolerationSeconds:
-                                      description: |-
-                                        TolerationSeconds represents the period of time the toleration (which must be
-                                        of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-                                        it is not set, which means tolerate the taint forever (do not evict). Zero and
-                                        negative values will be treated as 0 (evict immediately) by the system.
-                                      format: int64
-                                      type: integer
-                                    value:
-                                      description: |-
-                                        Value is the taint value the toleration matches to.
-                                        If the operator is Exists, the value should be empty, otherwise just a regular string.
-                                      type: string
-                                  type: object
                                 type: array
                                 x-kubernetes-list-type: atomic
                             type: object
@@ -2357,7 +1854,6 @@ spec:
                               not specified and the client does not override the value, then tokens
                               are valid until their lifetime.
 
-
                               WARNING: existing tokens' timeout will not be affected (lowered) by changing this value
                             type: string
                           accessTokenInactivityTimeoutSeconds:
@@ -2446,10 +1942,8 @@ spec:
                           the proxy, and may use the trusted-ca-bundle for non-proxy HTTPS requests as
                           well.
 
-
                           The namespace for the ConfigMap referenced by trustedCA is
                           "openshift-config". Here is an example ConfigMap (in yaml):
-
 
                           apiVersion: v1
                           kind: ConfigMap
@@ -2529,7 +2023,6 @@ spec:
                           profile sets which scheduling profile should be set in order to configure scheduling
                           decisions for new pods.
 
-
                           Valid values are "LowNodeUtilization", "HighNodeUtilization", "NoScoring"
                           Defaults to "LowNodeUtilization"
                         enum:
@@ -2538,33 +2031,11 @@ spec:
                         - HighNodeUtilization
                         - NoScoring
                         type: string
-                      profileCustomizations:
-                        description: profileCustomizations contains configuration
-                          for modifying the default behavior of existing scheduler
-                          profiles.
-                        properties:
-                          dynamicResourceAllocation:
-                            description: |-
-                              dynamicResourceAllocation allows to enable or disable dynamic resource allocation within the scheduler.
-                              Dynamic resource allocation is an API for requesting and sharing resources between pods and containers inside a pod.
-                              Third-party resource drivers are responsible for tracking and allocating resources.
-                              Different kinds of resources support arbitrary parameters for defining requirements and initialization.
-                              Valid values are Enabled, Disabled and omitted.
-                              When omitted, this means no opinion and the platform is left to choose a reasonable default,
-                              which is subject to change over time.
-                              The current default is Disabled.
-                            enum:
-                            - ""
-                            - Enabled
-                            - Disabled
-                            type: string
-                        type: object
                     type: object
                   secretRefs:
                     description: |-
                       SecretRefs holds references to any secrets referenced by configuration
                       entries. Entries can reference the secrets using local object references.
-
 
                       Deprecated
                       This field is deprecated and will be removed in a future release
@@ -2580,9 +2051,7 @@ spec:
                             This field is effectively required, but due to backwards compatibility is
                             allowed to be empty. Instances of this type with an empty value here are
                             almost certainly wrong.
-                            TODO: Add other useful fields. apiVersion, kind, uid?
                             More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                           type: string
                       type: object
                       x-kubernetes-map-type: atomic
@@ -2662,7 +2131,6 @@ spec:
                                 description: |-
                                   StorageClassName is the StorageClass of the data volume for each etcd member.
 
-
                                   See https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1.
                                 type: string
                             type: object
@@ -2707,9 +2175,7 @@ spec:
                         description: |-
                           Endpoint is the full etcd cluster client endpoint URL. For example:
 
-
                               https://etcd-client:2379
-
 
                           If the URL uses an HTTPS scheme, the TLS field is required.
                         pattern: ^https://
@@ -2723,7 +2189,6 @@ spec:
                               ClientSecret refers to a secret for client mTLS authentication with the etcd cluster. It
                               may have the following key/value pairs:
 
-
                                   etcd-client-ca.crt: Certificate Authority value
                                   etcd-client.crt: Client certificate value
                                   etcd-client.key: Client certificate key value
@@ -2735,9 +2200,7 @@ spec:
                                   This field is effectively required, but due to backwards compatibility is
                                   allowed to be empty. Instances of this type with an empty value here are
                                   almost certainly wrong.
-                                  TODO: Add other useful fields. apiVersion, kind, uid?
                                   More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                  TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                 type: string
                             type: object
                             x-kubernetes-map-type: atomic
@@ -2860,9 +2323,8 @@ spec:
                   clusterNetwork:
                     default:
                     - cidr: 10.132.0.0/14
-                    description: |-
-                      ClusterNetwork is the list of IP address pools for pods.
-                      TODO: make this required in the next version of the API
+                    description: ClusterNetwork is the list of IP address pools for
+                      pods.
                     items:
                       description: |-
                         ClusterNetworkEntry is a single IP address block for pod IP blocks. IP blocks
@@ -2890,9 +2352,8 @@ spec:
                     format: cidr
                     type: string
                   machineNetwork:
-                    description: |-
-                      MachineNetwork is the list of IP address pools for machines.
-                      TODO: make this required in the next version of the API
+                    description: MachineNetwork is the list of IP address pools for
+                      machines.
                     items:
                       description: MachineNetworkEntry is a single IP address block
                         for node IP blocks.
@@ -2935,7 +2396,6 @@ spec:
                     description: |-
                       ServiceNetwork is the list of IP address pools for services.
                       NOTE: currently only one entry is supported.
-                      TODO: make this required in the next version of the API
                     items:
                       description: ServiceNetworkEntry is a single IP address block
                         for the service network.
@@ -3010,7 +2470,6 @@ spec:
                           plane.
                           This is mainly used for cloud provider controller config:
                           https://github.com/kubernetes/kubernetes/blob/f5be5052e3d0808abb904aebd3218fe4a5c2dd82/staging/src/k8s.io/legacy-cloud-providers/aws/aws.go#L1347-L1364
-                          TODO(dan): should this be named AWSNetworkConfig?
                         properties:
                           subnet:
                             description: Subnet is the subnet to use for control plane
@@ -3069,9 +2528,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3098,9 +2555,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3123,9 +2578,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3156,7 +2609,6 @@ spec:
                             value:
                               description: |-
                                 Value is the value of the tag.
-
 
                                 Some AWS service do not support empty values. Since tags are added to
                                 resources in many services, the length of the tag value must meet the
@@ -3201,8 +2653,8 @@ spec:
                           controlPlaneOperatorARN:
                             description: "ControlPlaneOperatorARN  is an ARN value
                               referencing a role appropriate for the Control Plane
-                              Operator.\n\n\nThe following is an example of a valid
-                              policy document:\n\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
+                              Operator.\n\nThe following is an example of a valid
+                              policy document:\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
                               [\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
                               [\n\t\t\t\t\"ec2:CreateVpcEndpoint\",\n\t\t\t\t\"ec2:DescribeVpcEndpoints\",\n\t\t\t\t\"ec2:ModifyVpcEndpoint\",\n\t\t\t\t\"ec2:DeleteVpcEndpoints\",\n\t\t\t\t\"ec2:CreateTags\",\n\t\t\t\t\"route53:ListHostedZones\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t},\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
@@ -3211,8 +2663,8 @@ spec:
                             type: string
                           imageRegistryARN:
                             description: "ImageRegistryARN is an ARN value referencing
-                              a role appropriate for the Image Registry Operator.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                              a role appropriate for the Image Registry Operator.\n\nThe
+                              following is an example of a valid policy document:\n\n{\n\t\"Version\":
                               \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                               \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"s3:CreateBucket\",\n\t\t\t\t\"s3:DeleteBucket\",\n\t\t\t\t\"s3:PutBucketTagging\",\n\t\t\t\t\"s3:GetBucketTagging\",\n\t\t\t\t\"s3:PutBucketPublicAccessBlock\",\n\t\t\t\t\"s3:GetBucketPublicAccessBlock\",\n\t\t\t\t\"s3:PutEncryptionConfiguration\",\n\t\t\t\t\"s3:GetEncryptionConfiguration\",\n\t\t\t\t\"s3:PutLifecycleConfiguration\",\n\t\t\t\t\"s3:GetLifecycleConfiguration\",\n\t\t\t\t\"s3:GetBucketLocation\",\n\t\t\t\t\"s3:ListBucket\",\n\t\t\t\t\"s3:GetObject\",\n\t\t\t\t\"s3:PutObject\",\n\t\t\t\t\"s3:DeleteObject\",\n\t\t\t\t\"s3:ListBucketMultipartUploads\",\n\t\t\t\t\"s3:AbortMultipartUpload\",\n\t\t\t\t\"s3:ListMultipartUploadParts\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t}\n\t]\n}"
@@ -3225,10 +2677,10 @@ spec:
                               \"{{ .ProviderARN }}\"\n\t\t\t\t},\n\t\t\t\t\t\"Action\":
                               \"sts:AssumeRoleWithWebIdentity\",\n\t\t\t\t\"Condition\":
                               {\n\t\t\t\t\t\"StringEquals\": {\n\t\t\t\t\t\t\"{{ .ProviderName
-                              }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\n\nIngressARN
+                              }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\nIngressARN
                               is an ARN value referencing a role appropriate for the
-                              Ingress Operator.\n\n\nThe following is an example of
-                              a valid policy document:\n\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
+                              Ingress Operator.\n\nThe following is an example of
+                              a valid policy document:\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
                               [\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
                               [\n\t\t\t\t\"elasticloadbalancing:DescribeLoadBalancers\",\n\t\t\t\t\"tag:GetResources\",\n\t\t\t\t\"route53:ListHostedZones\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t},\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
@@ -3239,9 +2691,7 @@ spec:
                             description: |-
                               KubeCloudControllerARN is an ARN value referencing a role appropriate for the KCM/KCC.
 
-
                               The following is an example of a valid policy document:
-
 
                                {
                                "Version": "2012-10-17",
@@ -3311,8 +2761,8 @@ spec:
                             type: string
                           networkARN:
                             description: "NetworkARN is an ARN value referencing a
-                              role appropriate for the Network Operator.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                              role appropriate for the Network Operator.\n\nThe following
+                              is an example of a valid policy document:\n\n{\n\t\"Version\":
                               \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                               \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"ec2:DescribeInstances\",\n
                               \      \"ec2:DescribeInstanceStatus\",\n       \"ec2:DescribeInstanceTypes\",\n
@@ -3323,23 +2773,22 @@ spec:
                             type: string
                           nodePoolManagementARN:
                             description: "NodePoolManagementARN is an ARN value referencing
-                              a role appropriate for the CAPI Controller.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n
-                              \ \"Version\": \"2012-10-17\",\n \"Statement\": [\n
-                              \  {\n     \"Action\": [\n       \"ec2:AllocateAddress\",\n
-                              \      \"ec2:AssociateRouteTable\",\n       \"ec2:AttachInternetGateway\",\n
-                              \      \"ec2:AuthorizeSecurityGroupIngress\",\n       \"ec2:CreateInternetGateway\",\n
-                              \      \"ec2:CreateNatGateway\",\n       \"ec2:CreateRoute\",\n
-                              \      \"ec2:CreateRouteTable\",\n       \"ec2:CreateSecurityGroup\",\n
-                              \      \"ec2:CreateSubnet\",\n       \"ec2:CreateTags\",\n
-                              \      \"ec2:DeleteInternetGateway\",\n       \"ec2:DeleteNatGateway\",\n
-                              \      \"ec2:DeleteRouteTable\",\n       \"ec2:DeleteSecurityGroup\",\n
-                              \      \"ec2:DeleteSubnet\",\n       \"ec2:DeleteTags\",\n
-                              \      \"ec2:DescribeAccountAttributes\",\n       \"ec2:DescribeAddresses\",\n
-                              \      \"ec2:DescribeAvailabilityZones\",\n       \"ec2:DescribeImages\",\n
-                              \      \"ec2:DescribeInstances\",\n       \"ec2:DescribeInternetGateways\",\n
-                              \      \"ec2:DescribeNatGateways\",\n       \"ec2:DescribeNetworkInterfaces\",\n
-                              \      \"ec2:DescribeNetworkInterfaceAttribute\",\n
+                              a role appropriate for the CAPI Controller.\n\nThe following
+                              is an example of a valid policy document:\n\n{\n  \"Version\":
+                              \"2012-10-17\",\n \"Statement\": [\n   {\n     \"Action\":
+                              [\n       \"ec2:AllocateAddress\",\n       \"ec2:AssociateRouteTable\",\n
+                              \      \"ec2:AttachInternetGateway\",\n       \"ec2:AuthorizeSecurityGroupIngress\",\n
+                              \      \"ec2:CreateInternetGateway\",\n       \"ec2:CreateNatGateway\",\n
+                              \      \"ec2:CreateRoute\",\n       \"ec2:CreateRouteTable\",\n
+                              \      \"ec2:CreateSecurityGroup\",\n       \"ec2:CreateSubnet\",\n
+                              \      \"ec2:CreateTags\",\n       \"ec2:DeleteInternetGateway\",\n
+                              \      \"ec2:DeleteNatGateway\",\n       \"ec2:DeleteRouteTable\",\n
+                              \      \"ec2:DeleteSecurityGroup\",\n       \"ec2:DeleteSubnet\",\n
+                              \      \"ec2:DeleteTags\",\n       \"ec2:DescribeAccountAttributes\",\n
+                              \      \"ec2:DescribeAddresses\",\n       \"ec2:DescribeAvailabilityZones\",\n
+                              \      \"ec2:DescribeImages\",\n       \"ec2:DescribeInstances\",\n
+                              \      \"ec2:DescribeInternetGateways\",\n       \"ec2:DescribeNatGateways\",\n
+                              \      \"ec2:DescribeNetworkInterfaces\",\n       \"ec2:DescribeNetworkInterfaceAttribute\",\n
                               \      \"ec2:DescribeRouteTables\",\n       \"ec2:DescribeSecurityGroups\",\n
                               \      \"ec2:DescribeSubnets\",\n       \"ec2:DescribeVpcs\",\n
                               \      \"ec2:DescribeVpcAttribute\",\n       \"ec2:DescribeVolumes\",\n
@@ -3374,8 +2823,8 @@ spec:
                             type: string
                           storageARN:
                             description: "StorageARN is an ARN value referencing a
-                              role appropriate for the Storage Operator.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                              role appropriate for the Storage Operator.\n\nThe following
+                              is an example of a valid policy document:\n\n{\n\t\"Version\":
                               \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                               \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"ec2:AttachVolume\",\n\t\t\t\t\"ec2:CreateSnapshot\",\n\t\t\t\t\"ec2:CreateTags\",\n\t\t\t\t\"ec2:CreateVolume\",\n\t\t\t\t\"ec2:DeleteSnapshot\",\n\t\t\t\t\"ec2:DeleteTags\",\n\t\t\t\t\"ec2:DeleteVolume\",\n\t\t\t\t\"ec2:DescribeInstances\",\n\t\t\t\t\"ec2:DescribeSnapshots\",\n\t\t\t\t\"ec2:DescribeTags\",\n\t\t\t\t\"ec2:DescribeVolumes\",\n\t\t\t\t\"ec2:DescribeVolumesModifications\",\n\t\t\t\t\"ec2:DetachVolume\",\n\t\t\t\t\"ec2:ModifyVolume\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t}\n\t]\n}"
@@ -3393,7 +2842,6 @@ spec:
                         description: |-
                           ServiceEndpoints specifies optional custom endpoints which will override
                           the default service endpoint of specific AWS Services.
-
 
                           There must be only one ServiceEndpoint for a given service name.
                         items:
@@ -3450,9 +2898,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3495,12 +2941,10 @@ spec:
                           generated base domain for the guest cluster should be used that
                           is a subdomain of the management cluster's *.apps DNS.
 
-
                           For the KubeVirt platform, the basedomain can be autogenerated using
                           the *.apps domain of the management/infra hosting cluster
                           This makes the guest cluster's base domain a subdomain of the
                           hypershift infra/mgmt cluster's base domain.
-
 
                           Example:
                             Infra/Mgmt cluster's DNS
@@ -3512,7 +2956,6 @@ spec:
                               Cluster: guest.apps.mgmt-cluster.example.com
                               Apps: *.apps.guest.apps.mgmt-cluster.example.com
 
-
                           This is possible using OCP wildcard routes
                         type: boolean
                         x-kubernetes-validations:
@@ -3523,7 +2966,6 @@ spec:
                           Credentials defines the client credentials used when creating KubeVirt virtual machines.
                           Defining credentials is only necessary when the KubeVirt virtual machines are being placed
                           on a cluster separate from the one hosting the Hosted Control Plane components.
-
 
                           The default behavior when Credentials is not defined is for the KubeVirt VMs to be placed on
                           the same cluster and namespace as the Hosted Control Plane.
@@ -3555,6 +2997,7 @@ spec:
                             - message: infraNamespace is immutable
                               rule: self == oldSelf
                         required:
+                        - infraKubeConfigSecret
                         - infraNamespace
                         type: object
                       generateID:
@@ -3581,7 +3024,6 @@ spec:
                                   StorageClassMapping maps StorageClasses on the infra cluster hosting
                                   the KubeVirt VMs to StorageClasses that are made available within the
                                   Guest Cluster.
-
 
                                   NOTE: It is possible that not all capablities of an infra cluster's
                                   storageclass will be present for the corresponding guest clusters storageclass.
@@ -3686,9 +3128,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3704,20 +3144,15 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       kubeCloudControllerCreds:
-                        description: |-
+                        description: |
                           KubeCloudControllerCreds is a reference to a secret containing cloud
                           credentials with permissions matching the cloud controller policy.
                           This field is immutable. Once set, It can't be changed.
-
-
-                          TODO(dan): document the "cloud controller policy"
                         properties:
                           name:
                             default: ""
@@ -3726,20 +3161,15 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       nodePoolManagementCreds:
-                        description: |-
+                        description: |
                           NodePoolManagementCreds is a reference to a secret containing cloud
                           credentials with permissions matching the node pool management policy.
                           This field is immutable. Once set, It can't be changed.
-
-
-                          TODO(dan): document the "node pool management policy"
                         properties:
                           name:
                             default: ""
@@ -3748,9 +3178,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3773,10 +3201,8 @@ spec:
                           serviceInstance can be created via IBM Cloud catalog or CLI.
                           ServiceInstanceID is the unique identifier that can be obtained from IBM Cloud UI or IBM Cloud cli.
 
-
                           More detail about Power VS service instance.
                           https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
-
 
                           This field is immutable. Once set, It can't be changed.
                         type: string
@@ -3792,9 +3218,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3895,9 +3319,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -3925,9 +3347,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3943,9 +3363,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -3985,10 +3403,10 @@ spec:
                                   \"{{ .ProviderARN }}\"\n\t\t\t\t},\n\t\t\t\t\t\"Action\":
                                   \"sts:AssumeRoleWithWebIdentity\",\n\t\t\t\t\"Condition\":
                                   {\n\t\t\t\t\t\"StringEquals\": {\n\t\t\t\t\t\t\"{{
-                                  .ProviderName }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\n\nAWSKMSARN
+                                  .ProviderName }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\nAWSKMSARN
                                   is an ARN value referencing a role appropriate for
-                                  managing the auth via the AWS KMS key.\n\n\nThe
-                                  following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                                  managing the auth via the AWS KMS key.\n\nThe following
+                                  is an example of a valid policy document:\n\n{\n\t\"Version\":
                                   \"2012-10-17\",\n\t\"Statement\": [\n   \t{\n\t\t\t\"Effect\":
                                   \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"kms:Encrypt\",\n\t\t\t\t\"kms:Decrypt\",\n\t\t\t\t\"kms:ReEncrypt*\",\n\t\t\t\t\"kms:GenerateDataKey*\",\n\t\t\t\t\"kms:DescribeKey\"\n\t\t\t],\n\t\t\t\"Resource\":
                                   %q\n\t\t}\n\t]\n}"
@@ -4008,9 +3426,7 @@ spec:
                                       This field is effectively required, but due to backwards compatibility is
                                       allowed to be empty. Instances of this type with an empty value here are
                                       almost certainly wrong.
-                                      TODO: Add other useful fields. apiVersion, kind, uid?
                                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
@@ -4130,9 +3546,7 @@ spec:
                                           This field is effectively required, but due to backwards compatibility is
                                           allowed to be empty. Instances of this type with an empty value here are
                                           almost certainly wrong.
-                                          TODO: Add other useful fields. apiVersion, kind, uid?
                                           More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                          TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                         type: string
                                     type: object
                                     x-kubernetes-map-type: atomic
@@ -4220,9 +3634,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -4319,9 +3731,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -4389,16 +3799,8 @@ spec:
                   Condition contains details for one aspect of the current state of the HostedControlPlane.
                   Current condition types are: "Available"
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -4439,12 +3841,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
@@ -4517,9 +3914,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -4527,7 +3922,6 @@ spec:
                 description: |-
                   lastReleaseImageTransitionTime is the time of the last update to the current
                   releaseImage property.
-
 
                   Deprecated: Use versionStatus.history[0].startedTime instead.
                 format: date-time
@@ -4568,14 +3962,12 @@ spec:
                 description: |-
                   ReleaseImage is the release image applied to the hosted control plane.
 
-
                   Deprecated: Use versionStatus.desired.image instead.
                 type: string
               version:
                 description: |-
                   Version is the semantic version of the release applied by
                   the hosted control plane operator
-
 
                   Deprecated: Use versionStatus.desired.version instead.
                 type: string
@@ -4622,6 +4014,9 @@ spec:
                             version is a semantic version identifying the update version. When this
                             field is part of spec, version is optional if image is specified.
                           type: string
+                      required:
+                      - image
+                      - version
                       type: object
                     nullable: true
                     type: array
@@ -4646,18 +4041,8 @@ spec:
                             current status. Known types are:
                             * Recommended, for whether the update is recommended for the current cluster.
                           items:
-                            description: "Condition contains details for one aspect
-                              of the current state of this API Resource.\n---\nThis
-                              struct is intended for direct use as an array at the
-                              field path .status.conditions.  For example,\n\n\n\ttype
-                              FooStatus struct{\n\t    // Represents the observations
-                              of a foo's current state.\n\t    // Known .status.conditions.type
-                              are: \"Available\", \"Progressing\", and \"Degraded\"\n\t
-                              \   // +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t
-                              \   // +listType=map\n\t    // +listMapKey=type\n\t
-                              \   Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                              patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                              \   // other fields\n\t}"
+                            description: Condition contains details for one aspect
+                              of the current state of this API Resource.
                             properties:
                               lastTransitionTime:
                                 description: |-
@@ -4699,12 +4084,8 @@ spec:
                                 - Unknown
                                 type: string
                               type:
-                                description: |-
-                                  type of condition in CamelCase or in foo.example.com/CamelCase.
-                                  ---
-                                  Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                                  useful (see .node.status.conditions), the ability to deconflict is important.
-                                  The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                                description: type of condition in CamelCase or in
+                                  foo.example.com/CamelCase.
                                 maxLength: 316
                                 pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                                 type: string
@@ -4749,6 +4130,9 @@ spec:
                                 version is a semantic version identifying the update version. When this
                                 field is part of spec, version is optional if image is specified.
                               type: string
+                          required:
+                          - image
+                          - version
                           type: object
                         risks:
                           description: |-
@@ -4877,6 +4261,9 @@ spec:
                           version is a semantic version identifying the update version. When this
                           field is part of spec, version is optional if image is specified.
                         type: string
+                    required:
+                    - image
+                    - version
                     type: object
                   history:
                     description: |-
@@ -5003,9 +4390,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -5025,9 +4410,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -5063,7 +4446,6 @@ spec:
                       PodPriorityThreshold enables users to schedule "best-effort" pods, which
                       shouldn't trigger autoscaler actions, but only run when there are spare
                       resources available. The default is -10.
-
 
                       See the following for more details:
                       https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#how-does-cluster-autoscaler-work-with-pod-priority-and-preemption
@@ -5131,7 +4513,6 @@ spec:
                                     profile specifies the name of the desired audit policy configuration to be deployed to
                                     all OpenShift-provided API servers in the cluster.
 
-
                                     The following profiles are provided:
                                     - Default: the existing default policy.
                                     - WriteRequestBodies: like 'Default', but logs request and response HTTP payloads for
@@ -5139,7 +4520,6 @@ spec:
                                     - AllRequestBodies: like 'WriteRequestBodies', but also logs request and response
                                     HTTP payloads for read requests (get, list).
                                     - None: no requests are logged at all, not even oauthaccesstokens and oauthauthorizetokens.
-
 
                                     If unset, the 'Default' profile is used as the default.
                                   enum:
@@ -5164,7 +4544,6 @@ spec:
                               openshift-apiserver and oauth-apiserver), with the exception of those requests that match
                               one or more of the customRules.
 
-
                               The following profiles are provided:
                               - Default: default policy which means MetaData level logging with the exception of events
                                 (not logged at all), oauthaccesstokens and oauthauthorizetokens (both logged at RequestBody
@@ -5175,12 +4554,10 @@ spec:
                               HTTP payloads for read requests (get, list).
                               - None: no requests are logged at all, not even oauthaccesstokens and oauthauthorizetokens.
 
-
                               Warning: It is not recommended to disable audit logging by using the `None` profile unless you
                               are fully aware of the risks of not logging data that can be beneficial when troubleshooting issues.
                               If you disable audit logging and a support situation arises, you might need to enable audit logging
                               and reproduce the issue in order to troubleshoot properly.
-
 
                               If unset, the 'Default' profile is used as the default.
                             enum:
@@ -5216,10 +4593,8 @@ spec:
                               The behavior of unset can and will change over time.  Even if encryption is enabled by default,
                               the meaning of unset may change to a different encryption type based on changes in best practices.
 
-
                               When encryption is enabled, all sensitive resources shipped with the platform are encrypted.
                               This list of sensitive resources can and will change over time.  The current authoritative list is:
-
 
                                 1. secrets
                                 2. configmaps
@@ -5276,7 +4651,6 @@ spec:
                         description: |-
                           tlsSecurityProfile specifies settings for TLS connections for externally exposed servers.
 
-
                           If unset, a default (which may change between releases) is chosen. Note that only Old,
                           Intermediate and Custom profiles are currently supported, and the maximum available
                           minTLSVersion is VersionTLS12.
@@ -5287,21 +4661,15 @@ spec:
                               profile as invalid configurations can be catastrophic. An example custom profile
                               looks like this:
 
-
                                 ciphers:
-
 
                                   - ECDHE-ECDSA-CHACHA20-POLY1305
 
-
                                   - ECDHE-RSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-RSA-AES128-GCM-SHA256
 
-
                                   - ECDHE-ECDSA-AES128-GCM-SHA256
-
 
                                 minTLSVersion: VersionTLS11
                             nullable: true
@@ -5311,7 +4679,6 @@ spec:
                                   ciphers is used to specify the cipher algorithms that are negotiated
                                   during the TLS handshake.  Operators may remove entries their operands
                                   do not support.  For example, to use DES-CBC3-SHA  (yaml):
-
 
                                     ciphers:
                                       - DES-CBC3-SHA
@@ -5324,9 +4691,7 @@ spec:
                                   that is negotiated during the TLS handshake. For example, to use TLS
                                   versions 1.1, 1.2 and 1.3 (yaml):
 
-
                                     minTLSVersion: VersionTLS11
-
 
                                   NOTE: currently the highest minTLSVersion allowed is VersionTLS12
                                 enum:
@@ -5340,48 +4705,33 @@ spec:
                             description: |-
                               intermediate is a TLS security profile based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
-
 
                               and looks like this (yaml):
 
-
                                 ciphers:
-
 
                                   - TLS_AES_128_GCM_SHA256
 
-
                                   - TLS_AES_256_GCM_SHA384
-
 
                                   - TLS_CHACHA20_POLY1305_SHA256
 
-
                                   - ECDHE-ECDSA-AES128-GCM-SHA256
-
 
                                   - ECDHE-RSA-AES128-GCM-SHA256
 
-
                                   - ECDHE-ECDSA-AES256-GCM-SHA384
-
 
                                   - ECDHE-RSA-AES256-GCM-SHA384
 
-
                                   - ECDHE-ECDSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-RSA-CHACHA20-POLY1305
 
-
                                   - DHE-RSA-AES128-GCM-SHA256
 
-
                                   - DHE-RSA-AES256-GCM-SHA384
-
 
                                 minTLSVersion: VersionTLS12
                             nullable: true
@@ -5390,24 +4740,17 @@ spec:
                             description: |-
                               modern is a TLS security profile based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility
-
 
                               and looks like this (yaml):
 
-
                                 ciphers:
-
 
                                   - TLS_AES_128_GCM_SHA256
 
-
                                   - TLS_AES_256_GCM_SHA384
 
-
                                   - TLS_CHACHA20_POLY1305_SHA256
-
 
                                 minTLSVersion: VersionTLS13
                             nullable: true
@@ -5416,102 +4759,69 @@ spec:
                             description: |-
                               old is a TLS security profile based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility
-
 
                               and looks like this (yaml):
 
-
                                 ciphers:
-
 
                                   - TLS_AES_128_GCM_SHA256
 
-
                                   - TLS_AES_256_GCM_SHA384
-
 
                                   - TLS_CHACHA20_POLY1305_SHA256
 
-
                                   - ECDHE-ECDSA-AES128-GCM-SHA256
-
 
                                   - ECDHE-RSA-AES128-GCM-SHA256
 
-
                                   - ECDHE-ECDSA-AES256-GCM-SHA384
-
 
                                   - ECDHE-RSA-AES256-GCM-SHA384
 
-
                                   - ECDHE-ECDSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-RSA-CHACHA20-POLY1305
 
-
                                   - DHE-RSA-AES128-GCM-SHA256
-
 
                                   - DHE-RSA-AES256-GCM-SHA384
 
-
                                   - DHE-RSA-CHACHA20-POLY1305
-
 
                                   - ECDHE-ECDSA-AES128-SHA256
 
-
                                   - ECDHE-RSA-AES128-SHA256
-
 
                                   - ECDHE-ECDSA-AES128-SHA
 
-
                                   - ECDHE-RSA-AES128-SHA
-
 
                                   - ECDHE-ECDSA-AES256-SHA384
 
-
                                   - ECDHE-RSA-AES256-SHA384
-
 
                                   - ECDHE-ECDSA-AES256-SHA
 
-
                                   - ECDHE-RSA-AES256-SHA
-
 
                                   - DHE-RSA-AES128-SHA256
 
-
                                   - DHE-RSA-AES256-SHA256
-
 
                                   - AES128-GCM-SHA256
 
-
                                   - AES256-GCM-SHA384
-
 
                                   - AES128-SHA256
 
-
                                   - AES256-SHA256
-
 
                                   - AES128-SHA
 
-
                                   - AES256-SHA
 
-
                                   - DES-CBC3-SHA
-
 
                                 minTLSVersion: VersionTLS10
                             nullable: true
@@ -5522,14 +4832,11 @@ spec:
                               the ability to specify individual TLS security profile parameters.
                               Old, Intermediate and Modern are TLS security profiles based on:
 
-
                               https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations
-
 
                               The profiles are intent based, so they may change over time as new ciphers are developed and existing ciphers
                               are found to be insecure.  Depending on precisely which ciphers are available to a process, the list may be
                               reduced.
-
 
                               Note that the Modern profile is currently not supported because it is not
                               yet well adopted by common software libraries.
@@ -5568,250 +4875,6 @@ spec:
                         required:
                         - name
                         type: object
-                      oidcProviders:
-                        description: |-
-                          OIDCProviders are OIDC identity providers that can issue tokens
-                          for this cluster
-                          Can only be set if "Type" is set to "OIDC".
-
-
-                          At most one provider can be configured.
-                        items:
-                          properties:
-                            claimMappings:
-                              description: |-
-                                ClaimMappings describes rules on how to transform information from an
-                                ID token into a cluster identity
-                              properties:
-                                groups:
-                                  description: |-
-                                    Groups is a name of the claim that should be used to construct
-                                    groups for the cluster identity.
-                                    The referenced claim must use array of strings values.
-                                  properties:
-                                    claim:
-                                      description: Claim is a JWT token claim to be
-                                        used in the mapping
-                                      type: string
-                                    prefix:
-                                      description: |-
-                                        Prefix is a string to prefix the value from the token in the result of the
-                                        claim mapping.
-
-
-                                        By default, no prefixing occurs.
-
-
-                                        Example: if `prefix` is set to "myoidc:"" and the `claim` in JWT contains
-                                        an array of strings "a", "b" and  "c", the mapping will result in an
-                                        array of string "myoidc:a", "myoidc:b" and "myoidc:c".
-                                      type: string
-                                  required:
-                                  - claim
-                                  type: object
-                                username:
-                                  description: |-
-                                    Username is a name of the claim that should be used to construct
-                                    usernames for the cluster identity.
-
-
-                                    Default value: "sub"
-                                  properties:
-                                    claim:
-                                      description: Claim is a JWT token claim to be
-                                        used in the mapping
-                                      type: string
-                                    prefix:
-                                      properties:
-                                        prefixString:
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                      - prefixString
-                                      type: object
-                                    prefixPolicy:
-                                      description: |-
-                                        PrefixPolicy specifies how a prefix should apply.
-
-
-                                        By default, claims other than `email` will be prefixed with the issuer URL to
-                                        prevent naming clashes with other plugins.
-
-
-                                        Set to "NoPrefix" to disable prefixing.
-
-
-                                        Example:
-                                            (1) `prefix` is set to "myoidc:" and `claim` is set to "username".
-                                                If the JWT claim `username` contains value `userA`, the resulting
-                                                mapped value will be "myoidc:userA".
-                                            (2) `prefix` is set to "myoidc:" and `claim` is set to "email". If the
-                                                JWT `email` claim contains value "userA@myoidc.tld", the resulting
-                                                mapped value will be "myoidc:userA@myoidc.tld".
-                                            (3) `prefix` is unset, `issuerURL` is set to `https://myoidc.tld`,
-                                                the JWT claims include "username":"userA" and "email":"userA@myoidc.tld",
-                                                and `claim` is set to:
-                                                (a) "username": the mapped value will be "https://myoidc.tld#userA"
-                                                (b) "email": the mapped value will be "userA@myoidc.tld"
-                                      enum:
-                                      - ""
-                                      - NoPrefix
-                                      - Prefix
-                                      type: string
-                                  required:
-                                  - claim
-                                  type: object
-                                  x-kubernetes-validations:
-                                  - message: prefix must be set if prefixPolicy is
-                                      'Prefix', but must remain unset otherwise
-                                    rule: 'has(self.prefixPolicy) && self.prefixPolicy
-                                      == ''Prefix'' ? (has(self.prefix) && size(self.prefix.prefixString)
-                                      > 0) : !has(self.prefix)'
-                              type: object
-                            claimValidationRules:
-                              description: ClaimValidationRules are rules that are
-                                applied to validate token claims to authenticate users.
-                              items:
-                                properties:
-                                  requiredClaim:
-                                    description: |-
-                                      RequiredClaim allows configuring a required claim name and its expected
-                                      value
-                                    properties:
-                                      claim:
-                                        description: |-
-                                          Claim is a name of a required claim. Only claims with string values are
-                                          supported.
-                                        minLength: 1
-                                        type: string
-                                      requiredValue:
-                                        description: RequiredValue is the required
-                                          value for the claim.
-                                        minLength: 1
-                                        type: string
-                                    required:
-                                    - claim
-                                    - requiredValue
-                                    type: object
-                                  type:
-                                    default: RequiredClaim
-                                    description: Type sets the type of the validation
-                                      rule
-                                    enum:
-                                    - RequiredClaim
-                                    type: string
-                                type: object
-                              type: array
-                              x-kubernetes-list-type: atomic
-                            issuer:
-                              description: Issuer describes atributes of the OIDC
-                                token issuer
-                              properties:
-                                audiences:
-                                  description: |-
-                                    Audiences is an array of audiences that the token was issued for.
-                                    Valid tokens must include at least one of these values in their
-                                    "aud" claim.
-                                    Must be set to exactly one value.
-                                  items:
-                                    minLength: 1
-                                    type: string
-                                  maxItems: 10
-                                  minItems: 1
-                                  type: array
-                                  x-kubernetes-list-type: set
-                                issuerCertificateAuthority:
-                                  description: |-
-                                    CertificateAuthority is a reference to a config map in the
-                                    configuration namespace. The .data of the configMap must contain
-                                    the "ca-bundle.crt" key.
-                                    If unset, system trust is used instead.
-                                  properties:
-                                    name:
-                                      description: name is the metadata.name of the
-                                        referenced config map
-                                      type: string
-                                  required:
-                                  - name
-                                  type: object
-                                issuerURL:
-                                  description: |-
-                                    URL is the serving URL of the token issuer.
-                                    Must use the https:// scheme.
-                                  pattern: ^https:\/\/[^\s]
-                                  type: string
-                              required:
-                              - audiences
-                              - issuerURL
-                              type: object
-                            name:
-                              description: Name of the OIDC provider
-                              minLength: 1
-                              type: string
-                            oidcClients:
-                              description: |-
-                                OIDCClients contains configuration for the platform's clients that
-                                need to request tokens from the issuer
-                              items:
-                                properties:
-                                  clientID:
-                                    description: ClientID is the identifier of the
-                                      OIDC client from the OIDC provider
-                                    minLength: 1
-                                    type: string
-                                  clientSecret:
-                                    description: |-
-                                      ClientSecret refers to a secret in the `openshift-config` namespace that
-                                      contains the client secret in the `clientSecret` key of the `.data` field
-                                    properties:
-                                      name:
-                                        description: name is the metadata.name of
-                                          the referenced secret
-                                        type: string
-                                    required:
-                                    - name
-                                    type: object
-                                  componentName:
-                                    description: |-
-                                      ComponentName is the name of the component that is supposed to consume this
-                                      client configuration
-                                    maxLength: 256
-                                    minLength: 1
-                                    type: string
-                                  componentNamespace:
-                                    description: |-
-                                      ComponentNamespace is the namespace of the component that is supposed to consume this
-                                      client configuration
-                                    maxLength: 63
-                                    minLength: 1
-                                    type: string
-                                  extraScopes:
-                                    description: ExtraScopes is an optional set of
-                                      scopes to request tokens with.
-                                    items:
-                                      type: string
-                                    type: array
-                                    x-kubernetes-list-type: set
-                                required:
-                                - clientID
-                                - componentName
-                                - componentNamespace
-                                type: object
-                              maxItems: 20
-                              type: array
-                              x-kubernetes-list-map-keys:
-                              - componentNamespace
-                              - componentName
-                              x-kubernetes-list-type: map
-                          required:
-                          - issuer
-                          - name
-                          type: object
-                        maxItems: 1
-                        type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
                       serviceAccountIssuer:
                         description: |-
                           serviceAccountIssuer is the identifier of the bound service account token
@@ -5836,7 +4899,6 @@ spec:
                           via the tokenreviews.authentication.k8s.io REST API. This is required to
                           honor bearer tokens that are provisioned by an external authentication service.
 
-
                           Can only be set if "Type" is set to "None".
                         properties:
                           kubeConfig:
@@ -5845,12 +4907,9 @@ spec:
                               describes how to access the remote webhook service.
                               The namespace for the referenced secret is openshift-config.
 
-
                               For further details, see:
 
-
                               https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication
-
 
                               The key "kubeConfig" is used to locate the data.
                               If the secret or expected key is not found, the webhook is not honored.
@@ -6010,7 +5069,6 @@ spec:
                             description: |-
                               allowedRegistries are the only registries permitted for image pull and push actions. All other registries are denied.
 
-
                               Only one of BlockedRegistries or AllowedRegistries may be set.
                             items:
                               type: string
@@ -6018,7 +5076,6 @@ spec:
                           blockedRegistries:
                             description: |-
                               blockedRegistries cannot be used for image pull and push actions. All other registries are permitted.
-
 
                               Only one of BlockedRegistries or AllowedRegistries may be set.
                             items:
@@ -6066,7 +5123,6 @@ spec:
                           The namespace and name of each route in this list should match an existing entry in the
                           status.componentRoutes list.
 
-
                           To determine the set of configurable Routes, look at namespace and name of entries in the
                           .status.componentRoutes list, where participating operators write the status of
                           configurable routes.
@@ -6083,7 +5139,6 @@ spec:
                               description: |-
                                 name is the logical name of the route to customize.
 
-
                                 The namespace and name of this componentRoute must match a corresponding
                                 entry in the list of status.componentRoutes if the route is to be customized.
                               maxLength: 256
@@ -6092,7 +5147,6 @@ spec:
                             namespace:
                               description: |-
                                 namespace is the namespace of the route to customize.
-
 
                                 The namespace and name of this componentRoute must match a corresponding
                                 entry in the list of status.componentRoutes if the route is to be customized.
@@ -6130,10 +5184,8 @@ spec:
                           route's host name is empty. The generated host name will follow this
                           pattern: "<route-name>.<route-namespace>.<domain>".
 
-
                           It is also used as the default wildcard domain suffix for ingress. The
                           default ingresscontroller domain will follow this pattern: "*.<domain>".
-
 
                           Once set, changing domain is not currently supported.
                         type: string
@@ -6160,18 +5212,14 @@ spec:
                                       If this field is not set then the default ingress controller of LBType Classic will be created.
                                       Valid values are:
 
-
                                       * "Classic": A Classic Load Balancer that makes routing decisions at either
                                         the transport layer (TCP/SSL) or the application layer (HTTP/HTTPS). See
                                         the following for additional details:
 
-
                                           https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html#clb
-
 
                                       * "NLB": A Network Load Balancer that makes routing decisions at the
                                         transport layer (TCP/SSL). See the following for additional details:
-
 
                                           https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html#nlb
                                     enum:
@@ -6216,11 +5264,9 @@ spec:
                           Each requiredHSTSPolicy must have at least a domainPattern and a maxAge to validate a route HSTS Policy route
                           annotation, and affect route admission.
 
-
                           A candidate route is checked for HSTS Policies if it has the HSTS Policy route annotation:
                           "haproxy.router.openshift.io/hsts_header"
                           E.g. haproxy.router.openshift.io/hsts_header: max-age=31536000;preload;includeSubDomains
-
 
                           - For each candidate route, if it matches a requiredHSTSPolicy domainPattern and optional namespaceSelector,
                           then the maxAge, preloadPolicy, and includeSubdomainsPolicy must be valid to be admitted.  Otherwise, the route
@@ -6230,11 +5276,9 @@ spec:
                           - If the candidate route doesn't match any requiredHSTSPolicy domainPattern and optional namespaceSelector,
                           then it may use any HSTS Policy annotation.
 
-
                           The HSTS policy configuration may be changed after routes have already been created. An update to a previously
                           admitted route may then fail if the updated route does not conform to the updated HSTS policy configuration.
                           However, changing the HSTS policy configuration will not cause a route that is already admitted to stop working.
-
 
                           Note that if there are no RequiredHSTSPolicies, any HSTS Policy annotation on the route is valid.
                         items:
@@ -6244,7 +5288,6 @@ spec:
                                 domainPatterns is a list of domains for which the desired HSTS annotations are required.
                                 If domainPatterns is specified and a route is created with a spec.host matching one of the domains,
                                 the route must specify the HSTS Policy components described in the matching RequiredHSTSPolicy.
-
 
                                 The use of wildcards is allowed like this: *.foo.com matches everything under foo.com.
                                 foo.com only matches foo.com, so to cover foo.com and everything under it, you must specify *both*.
@@ -6360,7 +5403,6 @@ spec:
                     description: |-
                       Network holds cluster-wide information about the network. It is used to configure the desired network configuration, such as: IP address pools for services/pod IPs, network plugin, etc.
                       Please view network.spec for an explanation on what applies when configuring this resource.
-                      TODO (csrwng): Add validation here to exclude changes that conflict with networking settings in the HostedCluster.Spec.Networking field.
                     properties:
                       clusterNetwork:
                         description: |-
@@ -6420,160 +5462,6 @@ spec:
                                   over allowedCIDRs.
                                 items:
                                   type: string
-                                type: array
-                                x-kubernetes-list-type: atomic
-                            type: object
-                        type: object
-                      networkDiagnostics:
-                        description: |-
-                          networkDiagnostics defines network diagnostics configuration.
-
-
-                          Takes precedence over spec.disableNetworkDiagnostics in network.operator.openshift.io.
-                          If networkDiagnostics is not specified or is empty,
-                          and the spec.disableNetworkDiagnostics flag in network.operator.openshift.io is set to true,
-                          the network diagnostics feature will be disabled.
-                        properties:
-                          mode:
-                            description: |-
-                              mode controls the network diagnostics mode
-
-
-                              When omitted, this means the user has no opinion and the platform is left
-                              to choose reasonable defaults. These defaults are subject to change over time.
-                              The current default is All.
-                            enum:
-                            - ""
-                            - All
-                            - Disabled
-                            type: string
-                          sourcePlacement:
-                            description: |-
-                              sourcePlacement controls the scheduling of network diagnostics source deployment
-
-
-                              See NetworkDiagnosticsSourcePlacement for more details about default values.
-                            properties:
-                              nodeSelector:
-                                additionalProperties:
-                                  type: string
-                                description: |-
-                                  nodeSelector is the node selector applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is `kubernetes.io/os: linux`.
-                                type: object
-                              tolerations:
-                                description: |-
-                                  tolerations is a list of tolerations applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is an empty list.
-                                items:
-                                  description: |-
-                                    The pod this Toleration is attached to tolerates any taint that matches
-                                    the triple <key,value,effect> using the matching operator <operator>.
-                                  properties:
-                                    effect:
-                                      description: |-
-                                        Effect indicates the taint effect to match. Empty means match all taint effects.
-                                        When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-                                      type: string
-                                    key:
-                                      description: |-
-                                        Key is the taint key that the toleration applies to. Empty means match all taint keys.
-                                        If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-                                      type: string
-                                    operator:
-                                      description: |-
-                                        Operator represents a key's relationship to the value.
-                                        Valid operators are Exists and Equal. Defaults to Equal.
-                                        Exists is equivalent to wildcard for value, so that a pod can
-                                        tolerate all taints of a particular category.
-                                      type: string
-                                    tolerationSeconds:
-                                      description: |-
-                                        TolerationSeconds represents the period of time the toleration (which must be
-                                        of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-                                        it is not set, which means tolerate the taint forever (do not evict). Zero and
-                                        negative values will be treated as 0 (evict immediately) by the system.
-                                      format: int64
-                                      type: integer
-                                    value:
-                                      description: |-
-                                        Value is the taint value the toleration matches to.
-                                        If the operator is Exists, the value should be empty, otherwise just a regular string.
-                                      type: string
-                                  type: object
-                                type: array
-                                x-kubernetes-list-type: atomic
-                            type: object
-                          targetPlacement:
-                            description: |-
-                              targetPlacement controls the scheduling of network diagnostics target daemonset
-
-
-                              See NetworkDiagnosticsTargetPlacement for more details about default values.
-                            properties:
-                              nodeSelector:
-                                additionalProperties:
-                                  type: string
-                                description: |-
-                                  nodeSelector is the node selector applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is `kubernetes.io/os: linux`.
-                                type: object
-                              tolerations:
-                                description: |-
-                                  tolerations is a list of tolerations applied to network diagnostics components
-
-
-                                  When omitted, this means the user has no opinion and the platform is left
-                                  to choose reasonable defaults. These defaults are subject to change over time.
-                                  The current default is `- operator: "Exists"` which means that all taints are tolerated.
-                                items:
-                                  description: |-
-                                    The pod this Toleration is attached to tolerates any taint that matches
-                                    the triple <key,value,effect> using the matching operator <operator>.
-                                  properties:
-                                    effect:
-                                      description: |-
-                                        Effect indicates the taint effect to match. Empty means match all taint effects.
-                                        When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-                                      type: string
-                                    key:
-                                      description: |-
-                                        Key is the taint key that the toleration applies to. Empty means match all taint keys.
-                                        If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-                                      type: string
-                                    operator:
-                                      description: |-
-                                        Operator represents a key's relationship to the value.
-                                        Valid operators are Exists and Equal. Defaults to Equal.
-                                        Exists is equivalent to wildcard for value, so that a pod can
-                                        tolerate all taints of a particular category.
-                                      type: string
-                                    tolerationSeconds:
-                                      description: |-
-                                        TolerationSeconds represents the period of time the toleration (which must be
-                                        of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-                                        it is not set, which means tolerate the taint forever (do not evict). Zero and
-                                        negative values will be treated as 0 (evict immediately) by the system.
-                                      format: int64
-                                      type: integer
-                                    value:
-                                      description: |-
-                                        Value is the taint value the toleration matches to.
-                                        If the operator is Exists, the value should be empty, otherwise just a regular string.
-                                      type: string
-                                  type: object
                                 type: array
                                 x-kubernetes-list-type: atomic
                             type: object
@@ -7240,7 +6128,6 @@ spec:
                               not specified and the client does not override the value, then tokens
                               are valid until their lifetime.
 
-
                               WARNING: existing tokens' timeout will not be affected (lowered) by changing this value
                             type: string
                           accessTokenInactivityTimeoutSeconds:
@@ -7335,10 +6222,8 @@ spec:
                           the proxy, and may use the trusted-ca-bundle for non-proxy HTTPS requests as
                           well.
 
-
                           The namespace for the ConfigMap referenced by trustedCA is
                           "openshift-config". Here is an example ConfigMap (in yaml):
-
 
                           apiVersion: v1
                           kind: ConfigMap
@@ -7418,7 +6303,6 @@ spec:
                           profile sets which scheduling profile should be set in order to configure scheduling
                           decisions for new pods.
 
-
                           Valid values are "LowNodeUtilization", "HighNodeUtilization", "NoScoring"
                           Defaults to "LowNodeUtilization"
                         enum:
@@ -7427,27 +6311,6 @@ spec:
                         - HighNodeUtilization
                         - NoScoring
                         type: string
-                      profileCustomizations:
-                        description: profileCustomizations contains configuration
-                          for modifying the default behavior of existing scheduler
-                          profiles.
-                        properties:
-                          dynamicResourceAllocation:
-                            description: |-
-                              dynamicResourceAllocation allows to enable or disable dynamic resource allocation within the scheduler.
-                              Dynamic resource allocation is an API for requesting and sharing resources between pods and containers inside a pod.
-                              Third-party resource drivers are responsible for tracking and allocating resources.
-                              Different kinds of resources support arbitrary parameters for defining requirements and initialization.
-                              Valid values are Enabled, Disabled and omitted.
-                              When omitted, this means no opinion and the platform is left to choose a reasonable default,
-                              which is subject to change over time.
-                              The current default is Disabled.
-                            enum:
-                            - ""
-                            - Enabled
-                            - Disabled
-                            type: string
-                        type: object
                     type: object
                 type: object
               controlPlaneReleaseImage:
@@ -7524,7 +6387,6 @@ spec:
                                 description: |-
                                   StorageClassName is the StorageClass of the data volume for each etcd member.
 
-
                                   See https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1.
                                 type: string
                             type: object
@@ -7569,9 +6431,7 @@ spec:
                         description: |-
                           Endpoint is the full etcd cluster client endpoint URL. For example:
 
-
                               https://etcd-client:2379
-
 
                           If the URL uses an HTTPS scheme, the TLS field is required.
                         pattern: ^https://
@@ -7585,7 +6445,6 @@ spec:
                               ClientSecret refers to a secret for client mTLS authentication with the etcd cluster. It
                               may have the following key/value pairs:
 
-
                                   etcd-client-ca.crt: Certificate Authority value
                                   etcd-client.crt: Client certificate value
                                   etcd-client.key: Client certificate key value
@@ -7597,9 +6456,7 @@ spec:
                                   This field is effectively required, but due to backwards compatibility is
                                   allowed to be empty. Instances of this type with an empty value here are
                                   almost certainly wrong.
-                                  TODO: Add other useful fields. apiVersion, kind, uid?
                                   More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                  TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                 type: string
                             type: object
                             x-kubernetes-map-type: atomic
@@ -7837,7 +6694,6 @@ spec:
                           plane.
                           This is mainly used for cloud provider controller config:
                           https://github.com/kubernetes/kubernetes/blob/f5be5052e3d0808abb904aebd3218fe4a5c2dd82/staging/src/k8s.io/legacy-cloud-providers/aws/aws.go#L1347-L1364
-                          TODO(dan): should this be named AWSNetworkConfig?
                         properties:
                           subnet:
                             description: Subnet is the subnet to use for control plane
@@ -7931,7 +6787,6 @@ spec:
                               description: |-
                                 Value is the value of the tag.
 
-
                                 Some AWS service do not support empty values. Since tags are added to
                                 resources in many services, the length of the tag value must meet the
                                 requirements of all services.
@@ -7953,8 +6808,8 @@ spec:
                           controlPlaneOperatorARN:
                             description: "ControlPlaneOperatorARN  is an ARN value
                               referencing a role appropriate for the Control Plane
-                              Operator.\n\n\nThe following is an example of a valid
-                              policy document:\n\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
+                              Operator.\n\nThe following is an example of a valid
+                              policy document:\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
                               [\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
                               [\n\t\t\t\t\"ec2:CreateVpcEndpoint\",\n\t\t\t\t\"ec2:DescribeVpcEndpoints\",\n\t\t\t\t\"ec2:ModifyVpcEndpoint\",\n\t\t\t\t\"ec2:DeleteVpcEndpoints\",\n\t\t\t\t\"ec2:CreateTags\",\n\t\t\t\t\"route53:ListHostedZones\",\n\t\t\t\t\"ec2:CreateSecurityGroup\",\n\t\t\t\t\"ec2:AuthorizeSecurityGroupIngress\",\n\t\t\t\t\"ec2:AuthorizeSecurityGroupEgress\",\n\t\t\t\t\"ec2:DeleteSecurityGroup\",\n\t\t\t\t\"ec2:RevokeSecurityGroupIngress\",\n\t\t\t\t\"ec2:RevokeSecurityGroupEgress\",\n\t\t\t\t\"ec2:DescribeSecurityGroups\",\n\t\t\t\t\"ec2:DescribeVpcs\",\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t},\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
@@ -7963,8 +6818,8 @@ spec:
                             type: string
                           imageRegistryARN:
                             description: "ImageRegistryARN is an ARN value referencing
-                              a role appropriate for the Image Registry Operator.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                              a role appropriate for the Image Registry Operator.\n\nThe
+                              following is an example of a valid policy document:\n\n{\n\t\"Version\":
                               \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                               \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"s3:CreateBucket\",\n\t\t\t\t\"s3:DeleteBucket\",\n\t\t\t\t\"s3:PutBucketTagging\",\n\t\t\t\t\"s3:GetBucketTagging\",\n\t\t\t\t\"s3:PutBucketPublicAccessBlock\",\n\t\t\t\t\"s3:GetBucketPublicAccessBlock\",\n\t\t\t\t\"s3:PutEncryptionConfiguration\",\n\t\t\t\t\"s3:GetEncryptionConfiguration\",\n\t\t\t\t\"s3:PutLifecycleConfiguration\",\n\t\t\t\t\"s3:GetLifecycleConfiguration\",\n\t\t\t\t\"s3:GetBucketLocation\",\n\t\t\t\t\"s3:ListBucket\",\n\t\t\t\t\"s3:GetObject\",\n\t\t\t\t\"s3:PutObject\",\n\t\t\t\t\"s3:DeleteObject\",\n\t\t\t\t\"s3:ListBucketMultipartUploads\",\n\t\t\t\t\"s3:AbortMultipartUpload\",\n\t\t\t\t\"s3:ListMultipartUploadParts\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t}\n\t]\n}"
@@ -7977,10 +6832,10 @@ spec:
                               \"{{ .ProviderARN }}\"\n\t\t\t\t},\n\t\t\t\t\t\"Action\":
                               \"sts:AssumeRoleWithWebIdentity\",\n\t\t\t\t\"Condition\":
                               {\n\t\t\t\t\t\"StringEquals\": {\n\t\t\t\t\t\t\"{{ .ProviderName
-                              }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\n\nIngressARN
+                              }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\nIngressARN
                               is an ARN value referencing a role appropriate for the
-                              Ingress Operator.\n\n\nThe following is an example of
-                              a valid policy document:\n\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
+                              Ingress Operator.\n\nThe following is an example of
+                              a valid policy document:\n\n{\n\t\"Version\": \"2012-10-17\",\n\t\"Statement\":
                               [\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
                               [\n\t\t\t\t\"elasticloadbalancing:DescribeLoadBalancers\",\n\t\t\t\t\"tag:GetResources\",\n\t\t\t\t\"route53:ListHostedZones\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t},\n\t\t{\n\t\t\t\"Effect\": \"Allow\",\n\t\t\t\"Action\":
@@ -7992,9 +6847,7 @@ spec:
                               KubeCloudControllerARN is an ARN value referencing a role appropriate for the KCM/KCC.
                               Source: https://cloud-provider-aws.sigs.k8s.io/prerequisites/#iam-policies
 
-
                               The following is an example of a valid policy document:
-
 
                                {
                                "Version": "2012-10-17",
@@ -8069,8 +6922,8 @@ spec:
                             type: string
                           networkARN:
                             description: "NetworkARN is an ARN value referencing a
-                              role appropriate for the Network Operator.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                              role appropriate for the Network Operator.\n\nThe following
+                              is an example of a valid policy document:\n\n{\n\t\"Version\":
                               \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                               \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"ec2:DescribeInstances\",\n
                               \      \"ec2:DescribeInstanceStatus\",\n       \"ec2:DescribeInstanceTypes\",\n
@@ -8081,22 +6934,22 @@ spec:
                             type: string
                           nodePoolManagementARN:
                             description: "NodePoolManagementARN is an ARN value referencing
-                              a role appropriate for the CAPI Controller.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n
-                              \ \"Version\": \"2012-10-17\",\n \"Statement\": [\n
-                              \  {\n     \"Action\": [\n       \"ec2:AssociateRouteTable\",\n
-                              \      \"ec2:AttachInternetGateway\",\n       \"ec2:AuthorizeSecurityGroupIngress\",\n
-                              \      \"ec2:CreateInternetGateway\",\n       \"ec2:CreateNatGateway\",\n
-                              \      \"ec2:CreateRoute\",\n       \"ec2:CreateRouteTable\",\n
-                              \      \"ec2:CreateSecurityGroup\",\n       \"ec2:CreateSubnet\",\n
-                              \      \"ec2:CreateTags\",\n       \"ec2:DeleteInternetGateway\",\n
-                              \      \"ec2:DeleteNatGateway\",\n       \"ec2:DeleteRouteTable\",\n
-                              \      \"ec2:DeleteSecurityGroup\",\n       \"ec2:DeleteSubnet\",\n
-                              \      \"ec2:DeleteTags\",\n       \"ec2:DescribeAccountAttributes\",\n
-                              \      \"ec2:DescribeAddresses\",\n       \"ec2:DescribeAvailabilityZones\",\n
-                              \      \"ec2:DescribeImages\",\n       \"ec2:DescribeInstances\",\n
-                              \      \"ec2:DescribeInternetGateways\",\n       \"ec2:DescribeNatGateways\",\n
-                              \      \"ec2:DescribeNetworkInterfaces\",\n       \"ec2:DescribeNetworkInterfaceAttribute\",\n
+                              a role appropriate for the CAPI Controller.\n\nThe following
+                              is an example of a valid policy document:\n\n{\n  \"Version\":
+                              \"2012-10-17\",\n \"Statement\": [\n   {\n     \"Action\":
+                              [\n       \"ec2:AssociateRouteTable\",\n       \"ec2:AttachInternetGateway\",\n
+                              \      \"ec2:AuthorizeSecurityGroupIngress\",\n       \"ec2:CreateInternetGateway\",\n
+                              \      \"ec2:CreateNatGateway\",\n       \"ec2:CreateRoute\",\n
+                              \      \"ec2:CreateRouteTable\",\n       \"ec2:CreateSecurityGroup\",\n
+                              \      \"ec2:CreateSubnet\",\n       \"ec2:CreateTags\",\n
+                              \      \"ec2:DeleteInternetGateway\",\n       \"ec2:DeleteNatGateway\",\n
+                              \      \"ec2:DeleteRouteTable\",\n       \"ec2:DeleteSecurityGroup\",\n
+                              \      \"ec2:DeleteSubnet\",\n       \"ec2:DeleteTags\",\n
+                              \      \"ec2:DescribeAccountAttributes\",\n       \"ec2:DescribeAddresses\",\n
+                              \      \"ec2:DescribeAvailabilityZones\",\n       \"ec2:DescribeImages\",\n
+                              \      \"ec2:DescribeInstances\",\n       \"ec2:DescribeInternetGateways\",\n
+                              \      \"ec2:DescribeNatGateways\",\n       \"ec2:DescribeNetworkInterfaces\",\n
+                              \      \"ec2:DescribeNetworkInterfaceAttribute\",\n
                               \      \"ec2:DescribeRouteTables\",\n       \"ec2:DescribeSecurityGroups\",\n
                               \      \"ec2:DescribeSubnets\",\n       \"ec2:DescribeVpcs\",\n
                               \      \"ec2:DescribeVpcAttribute\",\n       \"ec2:DescribeVolumes\",\n
@@ -8129,8 +6982,8 @@ spec:
                             type: string
                           storageARN:
                             description: "StorageARN is an ARN value referencing a
-                              role appropriate for the Storage Operator.\n\n\nThe
-                              following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                              role appropriate for the Storage Operator.\n\nThe following
+                              is an example of a valid policy document:\n\n{\n\t\"Version\":
                               \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                               \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"ec2:AttachVolume\",\n\t\t\t\t\"ec2:CreateSnapshot\",\n\t\t\t\t\"ec2:CreateTags\",\n\t\t\t\t\"ec2:CreateVolume\",\n\t\t\t\t\"ec2:DeleteSnapshot\",\n\t\t\t\t\"ec2:DeleteTags\",\n\t\t\t\t\"ec2:DeleteVolume\",\n\t\t\t\t\"ec2:DescribeInstances\",\n\t\t\t\t\"ec2:DescribeSnapshots\",\n\t\t\t\t\"ec2:DescribeTags\",\n\t\t\t\t\"ec2:DescribeVolumes\",\n\t\t\t\t\"ec2:DescribeVolumesModifications\",\n\t\t\t\t\"ec2:DetachVolume\",\n\t\t\t\t\"ec2:ModifyVolume\"\n\t\t\t],\n\t\t\t\"Resource\":
                               \"*\"\n\t\t}\n\t]\n}"
@@ -8148,7 +7001,6 @@ spec:
                         description: |-
                           ServiceEndpoints specifies optional custom endpoints which will override
                           the default service endpoint of specific AWS Services.
-
 
                           There must be only one ServiceEndpoint for a given service name.
                         items:
@@ -8196,16 +7048,16 @@ spec:
                                   control plane operator in the cluster account to
                                   create and manage a VPC endpoint, its\ncorresponding
                                   Security Group, and DNS records in the hypershift
-                                  local hosted zone.\n\n\nThe referenced role must
-                                  have a trust relationship that allows it to be assumed
+                                  local hosted zone.\n\nThe referenced role must have
+                                  a trust relationship that allows it to be assumed
                                   by the\ncontrol plane operator role in the VPC creator
                                   account.\nExample:\n{\n\t \"Version\": \"2012-10-17\",\n\t
                                   \"Statement\": [\n\t \t{\n\t \t\t\"Sid\": \"Statement1\",\n\t
                                   \t\t\"Effect\": \"Allow\",\n\t \t\t\"Principal\":
                                   {\n\t \t\t\t\"AWS\": \"arn:aws:iam::[cluster-creator-account-id]:role/[infra-id]-control-plane-operator\"\n\t
                                   \t\t},\n\t \t\t\"Action\": \"sts:AssumeRole\"\n\t
-                                  \t}\n\t ]\n}\n\n\nThe following is an example of
-                                  the policy document for this role.\n\n\n{\n\t\"Version\":
+                                  \t}\n\t ]\n}\n\nThe following is an example of the
+                                  policy document for this role.\n\n{\n\t\"Version\":
                                   \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                                   \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"ec2:CreateVpcEndpoint\",\n\t\t\t\t\"ec2:DescribeVpcEndpoints\",\n\t\t\t\t\"ec2:ModifyVpcEndpoint\",\n\t\t\t\t\"ec2:DeleteVpcEndpoints\",\n\t\t\t\t\"ec2:CreateTags\",\n\t\t\t\t\"route53:ListHostedZones\",\n\t\t\t\t\"ec2:CreateSecurityGroup\",\n\t\t\t\t\"ec2:AuthorizeSecurityGroupIngress\",\n\t\t\t\t\"ec2:AuthorizeSecurityGroupEgress\",\n\t\t\t\t\"ec2:DeleteSecurityGroup\",\n\t\t\t\t\"ec2:RevokeSecurityGroupIngress\",\n\t\t\t\t\"ec2:RevokeSecurityGroupEgress\",\n\t\t\t\t\"ec2:DescribeSecurityGroups\",\n\t\t\t\t\"ec2:DescribeVpcs\",\n\t\t\t\t\"route53:ChangeResourceRecordSets\",\n\t\t\t\t\"route53:ListResourceRecordSets\"\n\t\t\t],\n\t\t\t\"Resource\":
                                   \"*\"\n\t\t}\n\t]\n}"
@@ -8215,7 +7067,7 @@ spec:
                                 description: "IngressARN is an ARN value referencing
                                   the role in the VPC owner account that allows the\ningress
                                   operator in the cluster account to create and manage
-                                  records in the private DNS\nhosted zone.\n\n\nThe
+                                  records in the private DNS\nhosted zone.\n\nThe
                                   referenced role must have a trust relationship that
                                   allows it to be assumed by the\ningress operator
                                   role in the VPC creator account.\nExample:\n{\n\t
@@ -8224,8 +7076,8 @@ spec:
                                   \"Allow\",\n\t \t\t\"Principal\": {\n\t \t\t\t\"AWS\":
                                   \"arn:aws:iam::[cluster-creator-account-id]:role/[infra-id]-openshift-ingress\"\n\t
                                   \t\t},\n\t \t\t\"Action\": \"sts:AssumeRole\"\n\t
-                                  \t}\n\t ]\n}\n\n\nThe following is an example of
-                                  the policy document for this role.\n(Based on https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa-shared-vpc-config.html#rosa-sharing-vpc-dns-and-roles_rosa-shared-vpc-config)\n\n\n{\n\t\"Version\":
+                                  \t}\n\t ]\n}\n\nThe following is an example of the
+                                  policy document for this role.\n(Based on https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa-shared-vpc-config.html#rosa-sharing-vpc-dns-and-roles_rosa-shared-vpc-config)\n\n{\n\t\"Version\":
                                   \"2012-10-17\",\n\t\"Statement\": [\n\t\t{\n\t\t\t\"Effect\":
                                   \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"route53:ListHostedZones\",\n\t\t\t\t\"route53:ListHostedZonesByName\",\n\t\t\t\t\"route53:ChangeTagsForResource\",\n\t\t\t\t\"route53:GetAccountLimit\",\n\t\t\t\t\"route53:GetChange\",\n\t\t\t\t\"route53:GetHostedZone\",\n\t\t\t\t\"route53:ListTagsForResource\",\n\t\t\t\t\"route53:UpdateHostedZoneComment\",\n\t\t\t\t\"tag:GetResources\",\n\t\t\t\t\"tag:UntagResources\"\n\t\t\t\t\"route53:ChangeResourceRecordSets\",\n\t\t\t\t\"route53:ListResourceRecordSets\"\n\t\t\t],\n\t\t\t\"Resource\":
                                   \"*\"\n\t\t},\n\t]\n}"
@@ -8269,16 +7121,13 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       location:
                         description: |-
                           Location is the Azure region in where all the cloud infrastructure resources will be created.
-
 
                           Example: eastus
                         type: string
@@ -8291,12 +7140,9 @@ spec:
                           ResourceGroupName is the name of an existing resource group where all cloud resources created by the Hosted
                           Cluster are to be placed. The resource group is expected to exist under the same subscription as SubscriptionID.
 
-
                           In ARO HCP, this will be the managed resource group where customer cloud resources will be created.
 
-
                           Resource group naming requirements can be found here: https://azure.github.io/PSRule.Rules.Azure/en/rules/Azure.ResourceGroup.Name/.
-
 
                           Example: if your resource group ID is /subscriptions/<subscriptionID>/resourceGroups/<resourceGroupName>, your
                                    ResourceGroupName is <resourceGroupName>.
@@ -8320,7 +7166,6 @@ spec:
                           subnet is expected to be a subnet within the VNET specified in VnetID. This subnet is expected to exist under the
                           same subscription as SubscriptionID.
 
-
                           In ARO HCP, managed services will create the aforementioned load balancer in ResourceGroupName.
                         type: string
                         x-kubernetes-validations:
@@ -8339,9 +7184,7 @@ spec:
                           other than the one specified in ResourceGroupName, but it must exist under the same subscription as
                           SubscriptionID.
 
-
                           In ARO HCP, this will be the ID of the customer provided VNET.
-
 
                           Example: /subscriptions/<subscriptionID>/resourceGroups/<resourceGroupName>/providers/Microsoft.Network/virtualNetworks/<vnetName>
                         type: string
@@ -8352,8 +7195,10 @@ spec:
                     - credentials
                     - location
                     - resourceGroup
+                    - securityGroupID
                     - subnetID
                     - subscriptionID
+                    - vnetID
                     type: object
                   ibmcloud:
                     description: IBMCloud defines IBMCloud specific settings for components
@@ -8373,12 +7218,10 @@ spec:
                           generated base domain for the guest cluster should be used that
                           is a subdomain of the management cluster's *.apps DNS.
 
-
                           For the KubeVirt platform, the basedomain can be autogenerated using
                           the *.apps domain of the management/infra hosting cluster
                           This makes the guest cluster's base domain a subdomain of the
                           hypershift infra/mgmt cluster's base domain.
-
 
                           Example:
                             Infra/Mgmt cluster's DNS
@@ -8390,7 +7233,6 @@ spec:
                               Cluster: guest.apps.mgmt-cluster.example.com
                               Apps: *.apps.guest.apps.mgmt-cluster.example.com
 
-
                           This is possible using OCP wildcard routes
                         type: boolean
                         x-kubernetes-validations:
@@ -8401,7 +7243,6 @@ spec:
                           Credentials defines the client credentials used when creating KubeVirt virtual machines.
                           Defining credentials is only necessary when the KubeVirt virtual machines are being placed
                           on a cluster separate from the one hosting the Hosted Control Plane components.
-
 
                           The default behavior when Credentials is not defined is for the KubeVirt VMs to be placed on
                           the same cluster and namespace as the Hosted Control Plane.
@@ -8433,6 +7274,7 @@ spec:
                             - message: infraNamespace is immutable
                               rule: self == oldSelf
                         required:
+                        - infraKubeConfigSecret
                         - infraNamespace
                         type: object
                       generateID:
@@ -8459,7 +7301,6 @@ spec:
                                   StorageClassMapping maps StorageClasses on the infra cluster hosting
                                   the KubeVirt VMs to StorageClasses that are made available within the
                                   Guest Cluster.
-
 
                                   NOTE: It is possible that not all capablities of an infra cluster's
                                   storageclass will be present for the corresponding guest clusters storageclass.
@@ -8551,15 +7392,12 @@ spec:
                           ExternalNetwork is the OpenStack Network to be used to get public internet to the VMs.
                           This option is ignored if DisableExternalNetwork is set to true.
 
-
                           If ExternalNetwork is defined it must refer to exactly one external network.
-
 
                           If ExternalNetwork is not defined or is empty the controller will use any
                           existing external network as long as there is only one. It is an
                           error if ExternalNetwork is not defined and there are multiple
                           external networks unless DisableExternalNetwork is also set.
-
 
                           If ExternalNetwork is not defined and there are no external networks
                           the controller will proceed as though DisableExternalNetwork was set.
@@ -9032,9 +7870,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -9050,20 +7886,15 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       kubeCloudControllerCreds:
-                        description: |-
+                        description: |
                           KubeCloudControllerCreds is a reference to a secret containing cloud
                           credentials with permissions matching the cloud controller policy.
                           This field is immutable. Once set, It can't be changed.
-
-
-                          TODO(dan): document the "cloud controller policy"
                         properties:
                           name:
                             default: ""
@@ -9072,20 +7903,15 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       nodePoolManagementCreds:
-                        description: |-
+                        description: |
                           NodePoolManagementCreds is a reference to a secret containing cloud
                           credentials with permissions matching the node pool management policy.
                           This field is immutable. Once set, It can't be changed.
-
-
-                          TODO(dan): document the "node pool management policy"
                         properties:
                           name:
                             default: ""
@@ -9094,9 +7920,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -9119,10 +7943,8 @@ spec:
                           serviceInstance can be created via IBM Cloud catalog or CLI.
                           ServiceInstanceID is the unique identifier that can be obtained from IBM Cloud UI or IBM Cloud cli.
 
-
                           More detail about Power VS service instance.
                           https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
-
 
                           This field is immutable. Once set, It can't be changed.
                         type: string
@@ -9138,9 +7960,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -9212,15 +8032,6 @@ spec:
                   type:
                     description: Type is the type of infrastructure provider for the
                       cluster.
-                    enum:
-                    - AWS
-                    - None
-                    - IBMCloud
-                    - Agent
-                    - KubeVirt
-                    - Azure
-                    - PowerVS
-                    - OpenStack
                     type: string
                 required:
                 - type
@@ -9237,9 +8048,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -9267,9 +8076,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -9285,9 +8092,7 @@ spec:
                               This field is effectively required, but due to backwards compatibility is
                               allowed to be empty. Instances of this type with an empty value here are
                               almost certainly wrong.
-                              TODO: Add other useful fields. apiVersion, kind, uid?
                               More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -9327,10 +8132,10 @@ spec:
                                   \"{{ .ProviderARN }}\"\n\t\t\t\t},\n\t\t\t\t\t\"Action\":
                                   \"sts:AssumeRoleWithWebIdentity\",\n\t\t\t\t\"Condition\":
                                   {\n\t\t\t\t\t\"StringEquals\": {\n\t\t\t\t\t\t\"{{
-                                  .ProviderName }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\n\nAWSKMSARN
+                                  .ProviderName }}:sub\": {{ .ServiceAccounts }}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}\n\nAWSKMSARN
                                   is an ARN value referencing a role appropriate for
-                                  managing the auth via the AWS KMS key.\n\n\nThe
-                                  following is an example of a valid policy document:\n\n\n{\n\t\"Version\":
+                                  managing the auth via the AWS KMS key.\n\nThe following
+                                  is an example of a valid policy document:\n\n{\n\t\"Version\":
                                   \"2012-10-17\",\n\t\"Statement\": [\n   \t{\n\t\t\t\"Effect\":
                                   \"Allow\",\n\t\t\t\"Action\": [\n\t\t\t\t\"kms:Encrypt\",\n\t\t\t\t\"kms:Decrypt\",\n\t\t\t\t\"kms:ReEncrypt*\",\n\t\t\t\t\"kms:GenerateDataKey*\",\n\t\t\t\t\"kms:DescribeKey\"\n\t\t\t],\n\t\t\t\"Resource\":
                                   %q\n\t\t}\n\t]\n}"
@@ -9450,9 +8255,7 @@ spec:
                                           This field is effectively required, but due to backwards compatibility is
                                           allowed to be empty. Instances of this type with an empty value here are
                                           almost certainly wrong.
-                                          TODO: Add other useful fields. apiVersion, kind, uid?
                                           More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                          TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                         type: string
                                     type: object
                                     x-kubernetes-map-type: atomic
@@ -9540,9 +8343,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -9634,9 +8435,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -9704,16 +8503,8 @@ spec:
                   Condition contains details for one aspect of the current state of the HostedControlPlane.
                   Current condition types are: "Available"
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -9754,12 +8545,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
@@ -9832,9 +8618,7 @@ spec:
                       This field is effectively required, but due to backwards compatibility is
                       allowed to be empty. Instances of this type with an empty value here are
                       almost certainly wrong.
-                      TODO: Add other useful fields. apiVersion, kind, uid?
                       More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -9842,7 +8626,6 @@ spec:
                 description: |-
                   lastReleaseImageTransitionTime is the time of the last update to the current
                   releaseImage property.
-
 
                   Deprecated: Use versionStatus.history[0].startedTime instead.
                 format: date-time
@@ -9883,14 +8666,12 @@ spec:
                 description: |-
                   ReleaseImage is the release image applied to the hosted control plane.
 
-
                   Deprecated: Use versionStatus.desired.image instead.
                 type: string
               version:
                 description: |-
                   Version is the semantic version of the release applied by
                   the hosted control plane operator
-
 
                   Deprecated: Use versionStatus.desired.version instead.
                 type: string
@@ -9937,6 +8718,9 @@ spec:
                             version is a semantic version identifying the update version. When this
                             field is part of spec, version is optional if image is specified.
                           type: string
+                      required:
+                      - image
+                      - version
                       type: object
                     nullable: true
                     type: array
@@ -9961,18 +8745,8 @@ spec:
                             current status. Known types are:
                             * Recommended, for whether the update is recommended for the current cluster.
                           items:
-                            description: "Condition contains details for one aspect
-                              of the current state of this API Resource.\n---\nThis
-                              struct is intended for direct use as an array at the
-                              field path .status.conditions.  For example,\n\n\n\ttype
-                              FooStatus struct{\n\t    // Represents the observations
-                              of a foo's current state.\n\t    // Known .status.conditions.type
-                              are: \"Available\", \"Progressing\", and \"Degraded\"\n\t
-                              \   // +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t
-                              \   // +listType=map\n\t    // +listMapKey=type\n\t
-                              \   Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                              patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                              \   // other fields\n\t}"
+                            description: Condition contains details for one aspect
+                              of the current state of this API Resource.
                             properties:
                               lastTransitionTime:
                                 description: |-
@@ -10014,12 +8788,8 @@ spec:
                                 - Unknown
                                 type: string
                               type:
-                                description: |-
-                                  type of condition in CamelCase or in foo.example.com/CamelCase.
-                                  ---
-                                  Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                                  useful (see .node.status.conditions), the ability to deconflict is important.
-                                  The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                                description: type of condition in CamelCase or in
+                                  foo.example.com/CamelCase.
                                 maxLength: 316
                                 pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                                 type: string
@@ -10064,6 +8834,9 @@ spec:
                                 version is a semantic version identifying the update version. When this
                                 field is part of spec, version is optional if image is specified.
                               type: string
+                          required:
+                          - image
+                          - version
                           type: object
                         risks:
                           description: |-
@@ -10192,6 +8965,9 @@ spec:
                           version is a semantic version identifying the update version. When this
                           field is part of spec, version is optional if image is specified.
                         type: string
+                    required:
+                    - image
+                    - version
                     type: object
                   history:
                     description: |-

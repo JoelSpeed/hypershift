@@ -89,9 +89,7 @@ spec:
                 description: "Arch is the preferred processor architecture for the
                   NodePool (currently only supported on AWS)\nNOTE: This is set as
                   optional to prevent validation from failing due to a limitation
-                  on client side validation with open API machinery:\n\thttps://github.com/kubernetes/kubernetes/issues/108768#issuecomment-1253912215\nTODO
-                  Add ppc64le and s390x to enum validation once the architectures
-                  are supported"
+                  on client side validation with open API machinery:\n\thttps://github.com/kubernetes/kubernetes/issues/108768#issuecomment-1253912215"
                 enum:
                 - arm64
                 - amd64
@@ -116,11 +114,8 @@ spec:
                 - min
                 type: object
               clusterName:
-                description: |-
+                description: |
                   ClusterName is the name of the HostedCluster this NodePool belongs to.
-
-
-                  TODO(dan): Should this be a LocalObjectReference?
                 type: string
                 x-kubernetes-validations:
                 - message: ClusterName is immutable
@@ -131,9 +126,7 @@ spec:
                   MachineConfig resources to be injected into the ignition configurations of
                   nodes in the NodePool. The MachineConfig API schema is defined here:
 
-
                   https://github.com/openshift/machine-config-operator/blob/18963e4f8fe66e8c513ca4b131620760a414997f/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L185
-
 
                   Each ConfigMap must have a single key named "config" whose value is the
                   JSON or YAML of a serialized MachineConfig.
@@ -149,9 +142,7 @@ spec:
                         This field is effectively required, but due to backwards compatibility is
                         allowed to be empty. Instances of this type with an empty value here are
                         almost certainly wrong.
-                        TODO: Add other useful fields. apiVersion, kind, uid?
                         More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                       type: string
                   type: object
                   x-kubernetes-map-type: atomic
@@ -178,16 +169,12 @@ spec:
                           MaxUnavailable is the maximum number of nodes that can be unavailable
                           during the update.
 
-
                           Value can be an absolute number (ex: 5) or a percentage of desired nodes
                           (ex: 10%).
 
-
                           Absolute number is calculated from percentage by rounding down.
 
-
                           Defaults to 1.
-
 
                           Example: when this is set to 30%, a max of 30% of the nodes can be made
                           unschedulable/unavailable immediately when the update starts. Once a set
@@ -217,19 +204,14 @@ spec:
                               MaxSurge is the maximum number of nodes that can be provisioned above the
                               desired number of nodes.
 
-
                               Value can be an absolute number (ex: 5) or a percentage of desired nodes
                               (ex: 10%).
 
-
                               Absolute number is calculated from percentage by rounding up.
-
 
                               This can not be 0 if MaxUnavailable is 0.
 
-
                               Defaults to 1.
-
 
                               Example: when this is set to 30%, new nodes can be provisioned immediately
                               when the rolling update starts, such that the total number of old and new
@@ -245,19 +227,14 @@ spec:
                               MaxUnavailable is the maximum number of nodes that can be unavailable
                               during the update.
 
-
                               Value can be an absolute number (ex: 5) or a percentage of desired nodes
                               (ex: 10%).
 
-
                               Absolute number is calculated from percentage by rounding down.
-
 
                               This can not be 0 if MaxSurge is 0.
 
-
                               Defaults to 0.
-
 
                               Example: when this is set to 30%, old nodes can be deleted down to 70% of
                               desired nodes immediately when the rolling update starts. Once new nodes
@@ -298,7 +275,6 @@ spec:
                   NodeDrainTimeout is the total amount of time that the controller will spend on draining a node.
                   The default value is 0, meaning that the node can be drained without any time limitations.
                   NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
-                  TODO (alberto): Today changing this field will trigger a recreate rolling update, which kind of defeats
                   the purpose of the change. In future we plan to propagate this field in-place.
                   https://github.com/kubernetes-sigs/cluster-api/issues/5880
                 type: string
@@ -405,7 +381,6 @@ spec:
                             description: |-
                               Tenancy indicates if instance should run on shared or single-tenant hardware.
 
-
                               Possible values:
                               default: NodePool instances run on shared hardware.
                               dedicated: Each NodePool instance runs on single-tenant hardware.
@@ -421,10 +396,8 @@ spec:
                           ResourceTags is an optional list of additional tags to apply to AWS node
                           instances.
 
-
                           These will be merged with HostedCluster scoped tags, and HostedCluster tags
                           take precedence in case of conflicts.
-
 
                           See https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html for
                           information on tagging AWS resources. AWS supports a maximum of 50 tags per
@@ -443,7 +416,6 @@ spec:
                             value:
                               description: |-
                                 Value is the value of the tag.
-
 
                                 Some AWS service do not support empty values. Since tags are added to
                                 resources in many services, the length of the tag value must meet the
@@ -487,7 +459,6 @@ spec:
                           size:
                             description: |-
                               Size specifies size (in Gi) of the storage device.
-
 
                               Must be greater than the image snapshot size or 8 (whichever is greater).
                             format: int64
@@ -577,6 +548,7 @@ spec:
                             !has(self.filters) : size(self.filters) > 0'
                     required:
                     - instanceType
+                    - subnet
                     type: object
                   azure:
                     properties:
@@ -639,7 +611,6 @@ spec:
                           * StandardSSD_LRS: Standard SSD
                           * Premium_LRS: Premium SDD
                           * UltraSSD_LRS: Ultra SDD
-
 
                           Defaults to Premium_LRS. For more details, visit the Azure documentation:
                           https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
@@ -954,10 +925,8 @@ spec:
                         description: |-
                           ImageDeletePolicy is policy for the image deletion.
 
-
                           delete: delete the image from the infrastructure.
                           retain: delete the image from the openshift but retain in the infrastructure.
-
 
                           The default is delete
                         enum:
@@ -974,7 +943,6 @@ spec:
                           when SystemType is set to s922 maximum MemoryGiB value is 942 GiB.
                           The minimum memory is 32 GiB.
 
-
                           When omitted, this means the user has no opinion and the platform is left to choose a reasonable
                           default. The current default is 32.
                         format: int32
@@ -985,11 +953,9 @@ spec:
                           ProcessorType is the VM instance processor type.
                           It must be set to one of the following values: Dedicated, Capped or Shared.
 
-
                           Dedicated: resources are allocated for a specific client, The hypervisor makes a 1:1 binding of a partition’s processor to a physical processor core.
                           Shared: Shared among other clients.
                           Capped: Shared, but resources do not expand beyond those that are requested, the amount of CPU time is Capped to the value specified for the entitlement.
-
 
                           if the processorType is selected as Dedicated, then Processors value cannot be fractional.
                           When omitted, this means that the user has no opinion and the platform is left to choose a
@@ -1025,7 +991,6 @@ spec:
                           The storage tiers in PowerVS are based on I/O operations per second (IOPS).
                           It means that the performance of your storage volumes is limited to the maximum number of IOPS based on volume size and storage tier.
                           Although, the exact numbers might change over time, the Tier 3 storage is currently set to 3 IOPS/GB, and the Tier 1 storage is currently set to 10 IOPS/GB.
-
 
                           The default is tier1
                         enum:
@@ -1115,9 +1080,7 @@ spec:
                   Tuned resources to define the tuning configuration to be applied to
                   nodes in the NodePool. The Tuned API is defined here:
 
-
                   https://github.com/openshift/cluster-node-tuning-operator/blob/2c76314fb3cc8f12aef4a0dcd67ddc3677d5b54f/pkg/apis/tuned/v1/tuned_types.go
-
 
                   Each ConfigMap must have a single key named "tuned" whose value is the
                   JSON or YAML of a serialized Tuned.
@@ -1133,9 +1096,7 @@ spec:
                         This field is effectively required, but due to backwards compatibility is
                         allowed to be empty. Instances of this type with an empty value here are
                         almost certainly wrong.
-                        TODO: Add other useful fields. apiVersion, kind, uid?
                         More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                       type: string
                   type: object
                   x-kubernetes-map-type: atomic
@@ -1218,7 +1179,6 @@ spec:
                           This filed is only exists when the KubeVirt virtual machines are being placed
                           on a cluster separate from the one hosting the Hosted Control Plane components.
 
-
                           The default behavior when Credentials is not defined is for the KubeVirt VMs to be placed on
                           the same cluster and namespace as the Hosted Control Plane.
                         properties:
@@ -1249,6 +1209,7 @@ spec:
                             - message: infraNamespace is immutable
                               rule: self == oldSelf
                         required:
+                        - infraKubeConfigSecret
                         - infraNamespace
                         type: object
                     type: object
@@ -1342,8 +1303,7 @@ spec:
                 description: "Arch is the preferred processor architecture for the
                   NodePool (currently only supported on AWS)\nNOTE: This is set as
                   optional to prevent validation from failing due to a limitation
-                  on client side validation with open API machinery:\n\thttps://github.com/kubernetes/kubernetes/issues/108768#issuecomment-1253912215\nTODO
-                  Add s390x to enum validation once the architecture is supported"
+                  on client side validation with open API machinery:\n\thttps://github.com/kubernetes/kubernetes/issues/108768#issuecomment-1253912215"
                 enum:
                 - arm64
                 - amd64
@@ -1375,11 +1335,8 @@ spec:
                 - message: max must be equal or greater than min
                   rule: self.max >= self.min
               clusterName:
-                description: |-
+                description: |
                   ClusterName is the name of the HostedCluster this NodePool belongs to.
-
-
-                  TODO(dan): Should this be a LocalObjectReference?
                 type: string
                 x-kubernetes-validations:
                 - message: ClusterName is immutable
@@ -1390,9 +1347,7 @@ spec:
                   MachineConfig resources to be injected into the ignition configurations of
                   nodes in the NodePool. The MachineConfig API schema is defined here:
 
-
                   https://github.com/openshift/machine-config-operator/blob/18963e4f8fe66e8c513ca4b131620760a414997f/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L185
-
 
                   Each ConfigMap must have a single key named "config" whose value is the YML
                   with one or more serialized machineconfiguration.openshift.io resources:
@@ -1415,9 +1370,7 @@ spec:
                         This field is effectively required, but due to backwards compatibility is
                         allowed to be empty. Instances of this type with an empty value here are
                         almost certainly wrong.
-                        TODO: Add other useful fields. apiVersion, kind, uid?
                         More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                       type: string
                   type: object
                   x-kubernetes-map-type: atomic
@@ -1444,16 +1397,12 @@ spec:
                           MaxUnavailable is the maximum number of nodes that can be unavailable
                           during the update.
 
-
                           Value can be an absolute number (ex: 5) or a percentage of desired nodes
                           (ex: 10%).
 
-
                           Absolute number is calculated from percentage by rounding down.
 
-
                           Defaults to 1.
-
 
                           Example: when this is set to 30%, a max of 30% of the nodes can be made
                           unschedulable/unavailable immediately when the update starts. Once a set
@@ -1483,19 +1432,14 @@ spec:
                               MaxSurge is the maximum number of nodes that can be provisioned above the
                               desired number of nodes.
 
-
                               Value can be an absolute number (ex: 5) or a percentage of desired nodes
                               (ex: 10%).
 
-
                               Absolute number is calculated from percentage by rounding up.
-
 
                               This can not be 0 if MaxUnavailable is 0.
 
-
                               Defaults to 1.
-
 
                               Example: when this is set to 30%, new nodes can be provisioned immediately
                               when the rolling update starts, such that the total number of old and new
@@ -1511,19 +1455,14 @@ spec:
                               MaxUnavailable is the maximum number of nodes that can be unavailable
                               during the update.
 
-
                               Value can be an absolute number (ex: 5) or a percentage of desired nodes
                               (ex: 10%).
 
-
                               Absolute number is calculated from percentage by rounding down.
-
 
                               This can not be 0 if MaxSurge is 0.
 
-
                               Defaults to 0.
-
 
                               Example: when this is set to 30%, old nodes can be deleted down to 70% of
                               desired nodes immediately when the rolling update starts. Once new nodes
@@ -1558,7 +1497,6 @@ spec:
                   NodeDrainTimeout is the maximum amount of time that the controller will spend on draining a node.
                   The default value is 0, meaning that the node can be drained without any time limitations.
                   NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
-                  TODO (alberto): Today changing this field will trigger a recreate rolling update, which kind of defeats
                   the purpose of the change. In future we plan to propagate this field in-place.
                   https://github.com/kubernetes-sigs/cluster-api/issues/5880 / https://github.com/kubernetes-sigs/cluster-api/pull/10589
                 type: string
@@ -1574,7 +1512,6 @@ spec:
                   NodeVolumeDetachTimeout is the maximum amount of time that the controller will spend on detaching volumes from a node.
                   The default value is 0, meaning that the volumes will be detached from the node without any time limitations.
                   After the timeout, the detachment of volumes that haven't been detached yet is skipped.
-                  TODO (cbusse): Same comment as Alberto's for `NodeDrainTimeout`:
                   Today changing this field will trigger a recreate rolling update, which kind of defeats
                   the purpose of the change. In future we plan to propagate this field in-place.
                   https://github.com/kubernetes-sigs/cluster-api/issues/5880 / https://github.com/kubernetes-sigs/cluster-api/pull/10589
@@ -1670,7 +1607,6 @@ spec:
                             description: |-
                               Tenancy indicates if instance should run on shared or single-tenant hardware.
 
-
                               Possible values:
                               default: NodePool instances run on shared hardware.
                               dedicated: Each NodePool instance runs on single-tenant hardware.
@@ -1686,10 +1622,8 @@ spec:
                           ResourceTags is an optional list of additional tags to apply to AWS node
                           instances.
 
-
                           These will be merged with HostedCluster scoped tags, and HostedCluster tags
                           take precedence in case of conflicts.
-
 
                           See https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html for
                           information on tagging AWS resources. AWS supports a maximum of 50 tags per
@@ -1708,7 +1642,6 @@ spec:
                             value:
                               description: |-
                                 Value is the value of the tag.
-
 
                                 Some AWS service do not support empty values. Since tags are added to
                                 resources in many services, the length of the tag value must meet the
@@ -1749,7 +1682,6 @@ spec:
                           size:
                             description: |-
                               Size specifies size (in Gi) of the storage device.
-
 
                               Must be greater than the image snapshot size or 8 (whichever is greater).
                             format: int64
@@ -1904,7 +1836,6 @@ spec:
                           * Premium_LRS: Premium SDD
                           * UltraSSD_LRS: Ultra SDD
 
-
                           Defaults to Premium_LRS. For more details, visit the Azure documentation:
                           https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
                         enum:
@@ -1996,7 +1927,6 @@ spec:
                           field is expected to exist under the same resource group as HostedCluster.Spec.Platform.Azure.ResourceGroupName. This
                           user assigned identity is expected to have the Contributor role assigned to it and scoped to the resource group
                           under HostedCluster.Spec.Platform.Azure.ResourceGroupName.
-
 
                           If this field is not supplied, the Service Principal credentials will be written to a file on the disk of each VM
                           in order to be accessible by the cloud provider; the aforementioned credentials provided are the same ones as
@@ -2250,10 +2180,8 @@ spec:
                         description: |-
                           ImageDeletePolicy is policy for the image deletion.
 
-
                           delete: delete the image from the infrastructure.
                           retain: delete the image from the openshift but retain in the infrastructure.
-
 
                           The default is delete
                         enum:
@@ -2270,7 +2198,6 @@ spec:
                           when SystemType is set to s922 maximum MemoryGiB value is 942 GiB.
                           The minimum memory is 32 GiB.
 
-
                           When omitted, this means the user has no opinion and the platform is left to choose a reasonable
                           default. The current default is 32.
                         format: int32
@@ -2281,11 +2208,9 @@ spec:
                           ProcessorType is the VM instance processor type.
                           It must be set to one of the following values: Dedicated, Capped or Shared.
 
-
                           Dedicated: resources are allocated for a specific client, The hypervisor makes a 1:1 binding of a partition’s processor to a physical processor core.
                           Shared: Shared among other clients.
                           Capped: Shared, but resources do not expand beyond those that are requested, the amount of CPU time is Capped to the value specified for the entitlement.
-
 
                           if the processorType is selected as Dedicated, then Processors value cannot be fractional.
                           When omitted, this means that the user has no opinion and the platform is left to choose a
@@ -2322,7 +2247,6 @@ spec:
                           It means that the performance of your storage volumes is limited to the maximum number of IOPS based on volume size and storage tier.
                           Although, the exact numbers might change over time, the Tier 3 storage is currently set to 3 IOPS/GB, and the Tier 1 storage is currently set to 10 IOPS/GB.
 
-
                           The default is tier1
                         enum:
                         - tier1
@@ -2342,15 +2266,6 @@ spec:
                     type: object
                   type:
                     description: Type specifies the platform name.
-                    enum:
-                    - AWS
-                    - None
-                    - IBMCloud
-                    - Agent
-                    - KubeVirt
-                    - Azure
-                    - PowerVS
-                    - OpenStack
                     type: string
                     x-kubernetes-validations:
                     - message: Type is immutable
@@ -2410,13 +2325,10 @@ spec:
                   Tuned or PerformanceProfile resources to define the tuning configuration to be applied to
                   nodes in the NodePool. The Tuned API is defined here:
 
-
                   https://github.com/openshift/cluster-node-tuning-operator/blob/2c76314fb3cc8f12aef4a0dcd67ddc3677d5b54f/pkg/apis/tuned/v1/tuned_types.go
-
 
                   The PerformanceProfile API is defined here:
                   https://github.com/openshift/cluster-node-tuning-operator/tree/b41042d42d4ba5bb2e99960248cf1d6ae4935018/pkg/apis/performanceprofile/v2
-
 
                   Each ConfigMap must have a single key named "tuning" whose value is the
                   JSON or YAML of a serialized Tuned or PerformanceProfile.
@@ -2432,9 +2344,7 @@ spec:
                         This field is effectively required, but due to backwards compatibility is
                         allowed to be empty. Instances of this type with an empty value here are
                         almost certainly wrong.
-                        TODO: Add other useful fields. apiVersion, kind, uid?
                         More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                       type: string
                   type: object
                   x-kubernetes-map-type: atomic
@@ -2524,7 +2434,6 @@ spec:
                           This filed is only exists when the KubeVirt virtual machines are being placed
                           on a cluster separate from the one hosting the Hosted Control Plane components.
 
-
                           The default behavior when Credentials is not defined is for the KubeVirt VMs to be placed on
                           the same cluster and namespace as the Hosted Control Plane.
                         properties:
@@ -2555,6 +2464,7 @@ spec:
                             - message: infraNamespace is immutable
                               rule: self == oldSelf
                         required:
+                        - infraKubeConfigSecret
                         - infraNamespace
                         type: object
                     type: object
