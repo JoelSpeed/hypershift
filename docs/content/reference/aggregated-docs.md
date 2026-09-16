@@ -47602,6 +47602,14 @@ recovery job was triggered.</p>
 A failure here requires external user intervention to resolve. E.g. changing the external DNS domain or making sure the domain is created
 and registered correctly.</p>
 </td>
+</tr><tr><td><p>&#34;ExternalInfrastructureReady&#34;</p></td>
+<td><p>ExternalInfrastructureReady reports whether the integrator&rsquo;s controller has
+finished provisioning infrastructure for an External platform HostedCluster.
+It is deliberately distinct from InfrastructureReady, which tracks the
+HostedControlPlane&rsquo;s own management cluster Services.</p>
+<p>The message is mirrored verbatim from the integrator&rsquo;s object, so it is the
+integrator&rsquo;s user-facing error channel. Only present on External platform clusters.</p>
+</td>
 </tr><tr><td><p>&#34;GCPDNSAvailable&#34;</p></td>
 <td><p>GCPDNSAvailable indicates whether the DNS configuration has been
 created in the customer VPC</p>
@@ -47753,6 +47761,16 @@ A failure here indicates that the role or the key are invalid, or the role doesn
 </tr><tr><td><p>&#34;ValidAzureKMSConfig&#34;</p></td>
 <td><p>ValidAzureKMSConfig indicates whether the given KMS input for the Azure platform is valid and operational
 A failure here indicates that the input is invalid, or permissions are missing to use the encryption key.</p>
+</td>
+</tr><tr><td><p>&#34;ValidExternalPlatformDeclaration&#34;</p></td>
+<td><p>ValidExternalPlatformDeclaration reports whether the platform declaration the
+integrator published, naming the platform and stating whether it runs a cloud
+controller manager, has been observed and recorded on status.platform.external.</p>
+<p>The declaration reaches the guest cluster&rsquo;s Infrastructure and therefore the machine
+config server, so it is recorded once and never re-read. This condition is False
+while HyperShift is waiting for it, and False again if the integrator later
+contradicts what was recorded, which HyperShift reports rather than acts on.
+Only present on External platform clusters.</p>
 </td>
 </tr><tr><td><p>&#34;ValidGCPCredentials&#34;</p></td>
 <td><p>ValidGCPCredentials indicates if GCP credentials are valid and operational
@@ -48990,6 +49008,275 @@ etcd-client.key: Client certificate key value
 <td><p>Selects the node group with the highest priority.</p>
 </td>
 </tr></tbody>
+</table>
+###ExternalCloudControllerManagerState { #hypershift.openshift.io/v1beta1.ExternalCloudControllerManagerState }
+<p>
+(<em>Appears on:</em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalCloudControllerManagerStatus">ExternalCloudControllerManagerStatus</a>)
+</p>
+<p>
+<p>ExternalCloudControllerManagerState describes whether a cloud controller manager runs
+for an external platform.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr><td><p>&#34;External&#34;</p></td>
+<td><p>ExternalCloudControllerManager means the integrator runs a cloud controller manager.</p>
+</td>
+</tr><tr><td><p>&#34;None&#34;</p></td>
+<td><p>NoCloudControllerManager means no cloud controller manager runs.</p>
+</td>
+</tr></tbody>
+</table>
+###ExternalCloudControllerManagerStatus { #hypershift.openshift.io/v1beta1.ExternalCloudControllerManagerStatus }
+<p>
+(<em>Appears on:</em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalPlatformStatus">ExternalPlatformStatus</a>)
+</p>
+<p>
+<p>ExternalCloudControllerManagerStatus declares whether a cloud controller manager runs
+for an external platform.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>state</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalCloudControllerManagerState">
+ExternalCloudControllerManagerState
+</a>
+</em>
+</td>
+<td>
+<p>state is either External or None.</p>
+<p>External means the integrator runs a cloud controller manager. Kubelets are started
+with &ndash;cloud-provider=external, so nodes join tainted with
+node.cloudprovider.kubernetes.io/uninitialized and the integrator&rsquo;s cloud controller
+manager must remove that taint. A cluster whose cloud controller manager never
+arrives has a healthy control plane and no schedulable nodes.</p>
+<p>None means no cloud controller manager runs. Nodes join untainted, and the
+integrator&rsquo;s machine controller is responsible for node addresses and provider IDs.</p>
+</td>
+</tr>
+</tbody>
+</table>
+###ExternalNodePoolPlatform { #hypershift.openshift.io/v1beta1.ExternalNodePoolPlatform }
+<p>
+(<em>Appears on:</em>
+<a href="#hypershift.openshift.io/v1beta1.NodePoolPlatform">NodePoolPlatform</a>)
+</p>
+<p>
+<p>ExternalNodePoolPlatform specifies the configuration used for NodePools on an external
+platform.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>machineTemplate,omitzero</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalTemplateReference">
+ExternalTemplateReference
+</a>
+</em>
+</td>
+<td>
+<p>machineTemplate is a reference to a Cluster API infrastructure machine template in
+the same namespace as this NodePool. HyperShift instantiates a copy of it per
+configuration hash into the control plane namespace and points a MachineDeployment
+at that copy, exactly as it does for the in-tree platforms.</p>
+<p>Unlike the HostedCluster&rsquo;s hostedClusterTemplate, this really is a Cluster API
+object: the MachineDeployment resolves it directly, so interposing a HyperShift type
+would buy nothing. Its apiGroup is therefore constrained to a Cluster API group,
+where the HyperShift Operator already holds the access it needs.</p>
+<p>Editing the referenced template is the supported way to change instance shape or
+image; it triggers a rolling upgrade, as editing an in-tree platform&rsquo;s NodePool
+configuration does.</p>
+</td>
+</tr>
+</tbody>
+</table>
+###ExternalPlatformSpec { #hypershift.openshift.io/v1beta1.ExternalPlatformSpec }
+<p>
+(<em>Appears on:</em>
+<a href="#hypershift.openshift.io/v1beta1.PlatformSpec">PlatformSpec</a>)
+</p>
+<p>
+<p>ExternalPlatformSpec specifies configuration for clusters running on a platform that
+HyperShift has no built-in knowledge of. All provider behaviour is supplied by a
+controller owned and released by an integrator, which HyperShift drives through a
+published contract rather than through compiled-in code.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>hostedClusterTemplate,omitzero</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalTemplateReference">
+ExternalTemplateReference
+</a>
+</em>
+</td>
+<td>
+<p>hostedClusterTemplate is a reference to an integrator-owned hosted cluster template
+in the same namespace as this HostedCluster. HyperShift instantiates the template
+into the control plane namespace, where the integrator&rsquo;s controller observes it and
+begins provisioning.</p>
+<p>The referenced object implements a contract published by HyperShift. It is not a
+Cluster API infrastructure template, even though it borrows the same
+template-and-instance shape. Everything else about the platform, including its name
+and whether it runs a cloud controller manager, is declared by the integrator on the
+instantiated object&rsquo;s status rather than configured here.</p>
+<p>It is immutable. The template is read once, when the instantiated object is created,
+so repointing it afterwards would silently have no effect.</p>
+</td>
+</tr>
+</tbody>
+</table>
+###ExternalPlatformStatus { #hypershift.openshift.io/v1beta1.ExternalPlatformStatus }
+<p>
+(<em>Appears on:</em>
+<a href="#hypershift.openshift.io/v1beta1.PlatformStatus">PlatformStatus</a>)
+</p>
+<p>
+<p>ExternalPlatformStatus records what the integrator declared this platform to be.</p>
+<p>The integrator publishes the declaration on the instantiated hosted cluster object, and
+HyperShift copies it here the first time it observes it. It is recorded rather than read
+afresh because both values reach the guest cluster&rsquo;s Infrastructure, which reaches the
+machine config server, which reaches the NodePool configuration hash: a later change
+would roll every node in the cluster onto a configuration that disagrees with the one
+the cluster was installed with. HyperShift therefore reports a subsequent change as a
+degraded condition instead of acting on it.</p>
+<p>Nothing here is user-configurable. The corresponding spec carries only a reference to
+the integrator&rsquo;s template, because a platform&rsquo;s identity and architecture are properties
+of the integration rather than of an individual cluster.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>name is the platform&rsquo;s name as declared by the integrator, for example ExampleCloud.
+It is propagated verbatim to the guest cluster&rsquo;s Infrastructure at
+status.platformStatus.external.platformName, which is where everything running in
+the cluster looks to identify the platform it is running on.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>cloudControllerManager,omitzero</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalCloudControllerManagerStatus">
+ExternalCloudControllerManagerStatus
+</a>
+</em>
+</td>
+<td>
+<p>cloudControllerManager declares whether the integrator runs a cloud controller
+manager for this platform.</p>
+</td>
+</tr>
+</tbody>
+</table>
+###ExternalTemplateReference { #hypershift.openshift.io/v1beta1.ExternalTemplateReference }
+<p>
+(<em>Appears on:</em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalNodePoolPlatform">ExternalNodePoolPlatform</a>,
+<a href="#hypershift.openshift.io/v1beta1.ExternalPlatformSpec">ExternalPlatformSpec</a>)
+</p>
+<p>
+<p>ExternalTemplateReference names a template object in the local namespace by API group
+and resource.</p>
+<p>Resource rather than kind: a resource is what a client resolves against without a
+discovery round-trip, it is unambiguous where a kind served by more than one resource is
+not, and it is the vocabulary RBAC is written in, so an administrator&rsquo;s registration
+grant and a user-supplied reference can be compared directly.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiGroup</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>apiGroup is the API group of the referenced template, for example example.io.
+The core group is not a valid value: the referenced object is always a custom
+resource.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>resource</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>resource is the lowercase plural resource name of the referenced template, for
+example foohostedclustertemplates.</p>
+<p>HyperShift derives the resource of the object it creates by stripping the templates
+suffix, so foohostedclustertemplates yields foohostedclusters. Integrators must
+therefore name their custom resources conventionally; a resource that does not
+resolve is reported as invalid configuration on the HostedCluster.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>name is the name of the referenced template.</p>
+</td>
+</tr>
+</tbody>
 </table>
 ###Filter { #hypershift.openshift.io/v1beta1.Filter }
 <p>
@@ -55834,6 +56121,8 @@ and the number of ready/unready nodes running it.</p>
 <p>
 <p>NodePoolPlatform specifies the underlying infrastructure provider for the
 NodePool and is used to configure platform specific behavior.</p>
+<p>The discriminated union rule below is applied to the external member only. The legacy
+members predate the rule and retrofitting it would reject existing objects.</p>
 </p>
 <table>
 <thead>
@@ -55966,6 +56255,21 @@ GCPNodePoolPlatform
 <td>
 <em>(Optional)</em>
 <p>gcp specifies the configuration used when operating on GCP.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>external,omitzero</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalNodePoolPlatform">
+ExternalNodePoolPlatform
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>external specifies the configuration used when the platform is managed by a
+controller outside HyperShift.</p>
 </td>
 </tr>
 </tbody>
@@ -57665,6 +57969,8 @@ do not support Capacity Reservations. Compatible with &ldquo;default&rdquo; and 
 <p>
 <p>PlatformSpec specifies the underlying infrastructure provider for the cluster
 and is used to configure platform specific behavior.</p>
+<p>The discriminated union rule below is applied to the external member only. The legacy
+members predate the rule and retrofitting it would reject existing objects.</p>
 </p>
 <table>
 <thead>
@@ -57800,6 +58106,21 @@ GCPPlatformSpec
 <p>gcp specifies configuration for clusters running on Google Cloud Platform.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>external,omitzero</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalPlatformSpec">
+ExternalPlatformSpec
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>external specifies configuration for clusters whose platform is managed by a
+controller outside HyperShift.</p>
+</td>
+</tr>
 </tbody>
 </table>
 ###PlatformStatus { #hypershift.openshift.io/v1beta1.PlatformStatus }
@@ -57833,6 +58154,22 @@ AWSPlatformStatus
 <p>aws contains platform-specific status for AWS</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>external,omitzero</code></br>
+<em>
+<a href="#hypershift.openshift.io/v1beta1.ExternalPlatformStatus">
+ExternalPlatformStatus
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>external contains platform-specific status for the External platform, as declared by
+the integrator that owns it. It is absent until the integrator has published the
+declaration, which HyperShift waits for before it allows any node to boot.</p>
+</td>
+</tr>
 </tbody>
 </table>
 ###PlatformType { #hypershift.openshift.io/v1beta1.PlatformType }
@@ -57860,6 +58197,10 @@ AWSPlatformStatus
 </td>
 </tr><tr><td><p>&#34;Azure&#34;</p></td>
 <td><p>AzurePlatform represents Azure infrastructure.</p>
+</td>
+</tr><tr><td><p>&#34;External&#34;</p></td>
+<td><p>ExternalPlatform represents infrastructure managed by a controller outside
+HyperShift, integrated through a published contract.</p>
 </td>
 </tr><tr><td><p>&#34;GCP&#34;</p></td>
 <td><p>GCPPlatform represents Google Cloud Platform infrastructure.</p>
@@ -62413,6 +62754,390 @@ classDiagram
   CAPIMachineSet ..> CAPIInfrastructureTemplate
 ```
 
+
+
+---
+
+## Source: docs/content/reference/external-platform-contract.md
+
+# The External platform contract
+
+`platform: External` lets a provider integrate with HyperShift without any provider-specific
+code in HyperShift. The HostedCluster references integrator-owned objects, HyperShift
+instantiates them and wires them into the Cluster API objects it already creates, and a
+controller the integrator owns and releases does all the provider work.
+
+This page is the contract between the two. It is the reference an integrator implements
+against, and the reference a HyperShift reviewer checks a change against.
+
+The feature is behind the `ExternalPlatform` feature gate and is TechPreview only.
+
+## Vocabulary
+
+| Term | Meaning |
+|---|---|
+| **Integrator** | Whoever owns the provider controller. Not necessarily Red Hat. |
+| **Hosted cluster template** | An integrator-defined object in the HostedCluster's namespace, referenced by `spec.platform.external.hostedClusterTemplate`. |
+| **Hosted cluster object** | The instance HyperShift creates from that template, in the control plane namespace. This is the handoff point. |
+| **Provider controller** | The integrator's controller. One per management cluster, watching every External HostedCluster. |
+
+The hosted cluster object is **not** a Cluster API `InfraCluster`, and Cluster API never
+resolves it. It borrows the template-and-instance shape, nothing more. The integrator's own
+Cluster API infrastructure object is a separate object that the integrator creates and then
+names on the hosted cluster object's status.
+
+## Topology
+
+The provider controller is a **fleet singleton**: one Deployment per management cluster,
+installed by the integrator alongside the HyperShift Operator, watching all External
+HostedClusters. This is how every Cluster API provider in the ecosystem already works. The
+integrator ships fixes on its own release cadence, the support blast radius is one clearly
+non-HyperShift Deployment, and the cost is O(1) rather than O(clusters).
+
+An integrator may additionally run per-HostedCluster workloads in each control plane
+namespace, such as a cloud controller manager or a CSI driver. Those are covered by
+ControlPlaneComponent below.
+
+## Registration
+
+Installing an integrator's custom resource definitions is not by itself consent to let that
+integrator into other tenants' control plane namespaces. A cluster administrator registers
+each integrator explicitly at install time:
+
+```shell
+hypershift install \
+  --tech-preview-no-upgrade \
+  --external-platform-provider=example.io=example-system/example-provider
+```
+
+The value is `<apiGroup>=<namespace>/<serviceAccountName>`, may be repeated, and keys on the
+**API group** rather than on the platform name, because the platform name is not known until
+the integrator declares it — long after the access decision has to be made.
+
+Registration does three things:
+
+1. A HostedCluster whose `spec.platform.external.hostedClusterTemplate.apiGroup` is not
+   registered is rejected, with a message naming the groups that are.
+2. The named ServiceAccount is bound into the control plane namespace of every HostedCluster
+   that named its API group, and no others. The binding is namespaced and HyperShift mints
+   it, which is the whole isolation story: partner A cannot read partner B's control plane
+   namespaces.
+3. The HyperShift Operator's own ClusterRole gains the API group. Kubernetes escalation
+   prevention means it cannot grant an API group it does not hold, so without this neither
+   the per-namespace provider Role nor the control plane operator's Role could be created.
+
+### What the provider ServiceAccount is granted
+
+In each matching control plane namespace, and nowhere else:
+
+| Resources | Verbs |
+|---|---|
+| The integrator's own API group | all |
+| `cluster.x-k8s.io`, `infrastructure.cluster.x-k8s.io` | all |
+| `controlplanecomponents`, `controlplanecomponents/status` | all |
+| `hostedcontrolplanes` | `get`, `list`, `watch` |
+| `secrets` named `service-network-admin-kubeconfig` and `pull-secret` | `get` |
+| `deployments`, `statefulsets` | all |
+| `services`, `serviceaccounts`, `configmaps` | all |
+| `pods`, `pods/log`, `events` | `get`, `list`, `watch` |
+
+Deliberately not granted: anything cluster-scoped, anything outside the control plane
+namespace, write access to the HostedControlPlane, and any secret other than the two named
+above. The etcd encryption key and the Kubernetes API server signing keys live in the same
+namespace, so the secrets rule names its secrets. `resourceNames` cannot restrict `list` or
+`watch`, which is why that rule is `get` only — a controller that wants to react to those
+secrets builds a single-object informer or polls.
+
+The kubeconfig granted is the **service network** one, not the admin one: the provider
+controller runs on the management cluster and so reaches the guest Kubernetes API server the
+same way the control plane's own components do, without depending on the external endpoint
+being published.
+
+## Naming
+
+Integrator types are named `FooHostedCluster` / `FooHostedClusterTemplate`, following
+HyperShift's own `HostedCluster` / `HostedControlPlane` style rather than Cluster API's bare
+`FooCluster`. The `HostedCluster` suffix makes it obvious in a `kubectl get` that the object
+belongs to a hosted control plane.
+
+HyperShift resolves the object it creates by **stripping `templates` from the plural
+resource**: `foohostedclustertemplates` yields `foohostedclusters`. A resource that does not
+resolve this way is reported as invalid configuration on the HostedCluster.
+
+## What HyperShift provides
+
+### The hosted cluster object
+
+Given
+
+```yaml
+apiVersion: hypershift.openshift.io/v1beta1
+kind: HostedCluster
+metadata:
+  name: example
+  namespace: clusters
+spec:
+  platform:
+    type: External
+    external:
+      hostedClusterTemplate:
+        apiGroup: example.io
+        resource: foohostedclustertemplates
+        name: my-infra
+```
+
+HyperShift creates, in the control plane namespace `clusters-example`:
+
+- Kind `FooHostedCluster`, same API group and served version as the template.
+- `metadata.name` equal to the HostedCluster's name.
+- `spec` a deep copy of the template's `spec.template.spec`.
+- `spec.controlPlaneEndpoint.host` and `.port` from the HostedControlPlane.
+- Label `cluster.x-k8s.io/cluster-name` set to the HostedCluster's `spec.infraID`, which is
+  the name of the Cluster API `Cluster` HyperShift will create, so the integrator can
+  correlate its own Cluster API objects with this one.
+- Label `hypershift.openshift.io/external-platform-group` set to the integrator's API group.
+
+**The spec is written on create only.** Re-copying the template on every reconcile would
+fight the integrator's own defaulting and would silently re-provision when someone edited the
+template. `spec.controlPlaneEndpoint` is the exception: it is not knowable when the user
+writes the template, it is HyperShift's to report, and it can legitimately change.
+`hostedClusterTemplate` is immutable for the same reason — repointing it after creation would
+silently do nothing.
+
+The object is not created until the control plane endpoint is known, so an integrator always
+sees a populated `spec.controlPlaneEndpoint`.
+
+### Everything else
+
+- The control plane namespace, and the RBAC above.
+- The guest kubeconfig and the pull secret, in that namespace.
+- The Cluster API `Cluster`, once the integrator has reported its infrastructure object.
+- Per-NodePool machine templates, instantiated per configuration hash.
+- The guest cluster's `Infrastructure`, rendered from the integrator's declaration.
+
+## What the integrator must provide
+
+### 1. The platform declaration, on `status.platform`
+
+```yaml
+status:
+  platform:
+    name: ExampleCloud
+    cloudControllerManager:
+      state: External   # or None
+```
+
+This is the integrator's one-time declaration of what this platform *is*. It is a status
+field rather than a label on the CRD so that the control plane operator can read it from the
+control plane namespace without cluster-scoped access.
+
+`name` is propagated verbatim to the guest's
+`Infrastructure.status.platformStatus.external.platformName`, which is where everything
+running in the cluster looks to identify its platform.
+
+`cloudControllerManager.state` decides the kubelet's cloud provider:
+
+- **`External`** — the kubelet runs with `--cloud-provider=external` and every new node is
+  tainted `node.cloudprovider.kubernetes.io/uninitialized`. **The integrator's cloud
+  controller manager must remove that taint.** If it does not, the control plane looks
+  healthy and the cluster has zero usable nodes.
+- **`None`** — no taint and no cloud controller manager. The integrator is responsible for
+  node addresses and `spec.providerID` through its Machine controller.
+
+**Publish both values together, before or at the same time as reporting ready.** HyperShift
+will not render the guest `Infrastructure` until the declaration is present, because guessing
+would bake the wrong `--cloud-provider` into every node that boots and the NodePool
+configuration hash would then change when the real value arrived, rolling the whole pool.
+
+**The declaration is recorded once and never re-read.** HyperShift copies it to
+`HostedCluster.status.platform.external` the first time it observes it. A later change is
+reported as `ValidExternalPlatformDeclaration=False` with reason
+`ExternalPlatformDeclarationChanged` and otherwise ignored, because acting on it would roll
+every node in the cluster onto a configuration that disagrees with the one it was installed
+with. In practice an integrator hardcodes both values per platform.
+
+### 2. The Cluster API infrastructure object, on `status.infrastructure`
+
+The integrator creates its own Cluster API infrastructure object in the control plane
+namespace, and then names it:
+
+```yaml
+status:
+  infrastructure:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: FooCluster
+    name: example
+```
+
+Carrying no version, matching Cluster API's own `ContractVersionedObjectReference`.
+HyperShift resolves the served version from the management cluster.
+
+Only once all three values are present does HyperShift create the Cluster API `Cluster` with
+`spec.infrastructureRef` pointing at that object. That field is immutable in Cluster API,
+which is why HyperShift cannot create the `Cluster` up front and guess. HyperShift never
+creates or mutates the infrastructure object itself — it reads a group, kind and name off it
+and nothing else.
+
+The object must satisfy the ordinary Cluster API infrastructure contract:
+`status.initialization.provisioned`, optional `status.failureDomains`, and the Cluster API
+contract labels on its CRD. Without those labels Cluster API cannot resolve a contract
+version, and the failure is opaque.
+
+### 3. A `Ready` condition, on `status.conditions`
+
+```yaml
+status:
+  conditions:
+    - type: Ready
+      status: "False"
+      reason: Provisioning
+      message: Waiting for the load balancer to become active
+```
+
+**HyperShift mirrors the message verbatim** onto the HostedCluster's
+`ExternalInfrastructureReady` condition. It is the integrator's user-facing error channel,
+and the only provider-specific detail an operator will see, so write it for a human who
+cannot see the provider's logs.
+
+After 30 minutes without becoming ready, HyperShift appends the elapsed time to the message,
+because an integrator controller that was never installed is otherwise indistinguishable from
+a slow cloud.
+
+### 4. Machines
+
+Standard Cluster API: `status.ready`, `spec.providerID`, and `status.addresses`.
+
+A NodePool references a Cluster API machine template through
+`spec.platform.external.machineTemplate`, whose API group must be a `.cluster.x-k8s.io` group.
+Unlike the HostedCluster's template this really is a Cluster API object, because the
+`MachineDeployment` resolves it directly.
+
+HyperShift instantiates a copy per configuration hash into the control plane namespace, named
+from a hash of the resolved spec, so **editing the referenced template is the supported way to
+change instance shape or image and it triggers a rolling upgrade** — exactly like editing an
+in-tree platform's NodePool configuration.
+
+The corollary is a requirement on the integrator: **the template spec must be stable.** An
+integrator that writes resolved or observed values back into a template's spec causes a
+continuous rolling upgrade across every NodePool using it.
+
+### 5. Health and version reporting
+
+Any workload the integrator runs in the control plane namespace must publish a
+`ControlPlaneComponent` in that namespace.
+
+```yaml
+apiVersion: hypershift.openshift.io/v1beta1
+kind: ControlPlaneComponent
+metadata:
+  name: example-cloud-controller-manager
+  namespace: clusters-example
+  ownerReferences:
+    - apiVersion: hypershift.openshift.io/v1beta1
+      kind: HostedControlPlane
+      name: example
+      uid: ...
+status:
+  version: 4.21.0          # required, see below
+  conditions:
+    - type: Available
+      status: "True"
+    - type: RolloutComplete
+      status: "True"
+```
+
+Two things about this are traps, and both are load-bearing:
+
+- **`status.version` is required and must be the HostedControlPlane's current release
+  version.** The control plane operator requires every `ControlPlaneComponent` in the
+  namespace to be at the target version before it will complete a version rollout. There is
+  no allowlist and no registry filter. A blank or stale version permanently blocks version
+  completion for the whole cluster.
+- **Nothing garbage-collects a `ControlPlaneComponent` the integrator stops managing.**
+  `Available=True` on every item in the namespace is what gates the HostedControlPlane's
+  `Available`, so an abandoned object leaves the cluster `Available=False` forever. Set an
+  owner reference to the HostedControlPlane so it is removed with the control plane.
+
+## Deletion
+
+Ordering matters, and HyperShift sequences it:
+
+1. NodePools' MachineSets and MachineDeployments are deleted. Cluster API deletes the
+   Machines; the integrator's Machine controller drops its finalizers.
+2. HyperShift deletes the Cluster API `Cluster` and waits for it to go. Cluster API cascades
+   to the integrator's infrastructure object.
+3. HyperShift deletes the **hosted cluster object** and waits for it to go. This is the
+   signal to tear down. The integrator holds a finalizer on it and removes the finalizer only
+   once teardown is complete.
+4. Only then are the HostedControlPlane and the control plane namespace deleted.
+
+Step 3 is deliberately between 2 and 4. It is after the `Cluster` so that machines and the
+Cluster API infrastructure object are gone before whatever they were built on, and before the
+namespace because the guest kubeconfig and the integrator's RoleBinding both live there and
+the provider needs them to finish.
+
+If the integrator's CRD has been uninstalled, there is nothing left to wait for and deletion
+proceeds — erroring would make the HostedCluster undeletable for a reason nobody can act on.
+
+### The escape hatch
+
+A provider controller that has been uninstalled or is permanently broken leaves a finalizer
+that makes the HostedCluster undeletable. An administrator can override it:
+
+```shell
+kubectl annotate hostedcluster -n clusters example \
+  hypershift.openshift.io/force-external-cleanup=true
+```
+
+HyperShift then strips the integrator's finalizers instead of waiting. **This very likely
+leaks whatever the provider provisioned**, because nothing has told the provider to tear it
+down, so it is an explicit administrator decision and not a timeout HyperShift takes on its
+own. Every step is logged.
+
+## Guest cluster defaults
+
+HyperShift cannot know what an External platform supports, so the defaults are conservative
+and set on create only, leaving an integrator free to configure something better:
+
+- **Ingress.** `LoadBalancerService` publishing when the integrator declared
+  `cloudControllerManager.state: External`, since a cloud controller manager implies load
+  balancer support; `HostNetwork` otherwise. HyperShift skips the default IngressController
+  entirely if one already exists, so creating it first is the supported override.
+- **Image registry.** `emptyDir` storage, because HyperShift knows of no object storage and
+  without a backend the registry sits Degraded. Configure real storage afterwards; it is
+  kept.
+- **Storage.** The cluster storage operator is deployed, but HyperShift waits for no CSI
+  driver. Any driver is the integrator's to deploy and to report on through its own
+  `ControlPlaneComponent`.
+
+## Conditions to watch
+
+| Condition | On | Meaning |
+|---|---|---|
+| `ExternalInfrastructureReady` | HostedCluster | Whether the integrator has finished provisioning. Its message is the integrator's, verbatim. |
+| `ValidExternalPlatformDeclaration` | HostedCluster | Whether the declaration on `status.platform` is well formed and unchanged since it was recorded. |
+| `ValidConfiguration` | HostedCluster | Includes rejection of an unregistered API group and of a template resource that does not resolve. |
+
+## Smoke test
+
+```shell
+hypershift install --tech-preview-no-upgrade \
+  --external-platform-provider=example.io=example-system/example-provider
+
+kubectl apply -f <the integrator's CRDs and a FooHostedClusterTemplate>
+
+hypershift create cluster external \
+  --hosted-cluster-template-api-group example.io \
+  --hosted-cluster-template-resource foohostedclustertemplates \
+  --hosted-cluster-template-name my-infra \
+  ...
+
+kubectl get hc example -n clusters \
+  -o jsonpath='{.status.conditions[?(@.type=="ExternalInfrastructureReady")]}'
+kubectl -n clusters-example get foohostedcluster,cluster,controlplanecomponents
+kubectl get infrastructure cluster --kubeconfig <guest kubeconfig> \
+  -o jsonpath='{.status.platformStatus.external}'
+```
 
 
 ---

@@ -201,6 +201,16 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &hypershiftv1beta1.EtcdSpecApplyConfiguration{}
 	case v1beta1.SchemeGroupVersion.WithKind("EtcdTLSConfig"):
 		return &hypershiftv1beta1.EtcdTLSConfigApplyConfiguration{}
+	case v1beta1.SchemeGroupVersion.WithKind("ExternalCloudControllerManagerStatus"):
+		return &hypershiftv1beta1.ExternalCloudControllerManagerStatusApplyConfiguration{}
+	case v1beta1.SchemeGroupVersion.WithKind("ExternalNodePoolPlatform"):
+		return &hypershiftv1beta1.ExternalNodePoolPlatformApplyConfiguration{}
+	case v1beta1.SchemeGroupVersion.WithKind("ExternalPlatformSpec"):
+		return &hypershiftv1beta1.ExternalPlatformSpecApplyConfiguration{}
+	case v1beta1.SchemeGroupVersion.WithKind("ExternalPlatformStatus"):
+		return &hypershiftv1beta1.ExternalPlatformStatusApplyConfiguration{}
+	case v1beta1.SchemeGroupVersion.WithKind("ExternalTemplateReference"):
+		return &hypershiftv1beta1.ExternalTemplateReferenceApplyConfiguration{}
 	case v1beta1.SchemeGroupVersion.WithKind("Filter"):
 		return &hypershiftv1beta1.FilterApplyConfiguration{}
 	case v1beta1.SchemeGroupVersion.WithKind("FilterByNeutronTags"):

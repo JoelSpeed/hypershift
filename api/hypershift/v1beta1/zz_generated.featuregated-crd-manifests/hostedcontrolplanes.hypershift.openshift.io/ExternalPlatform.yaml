@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    feature-gate.release.openshift.io/OpenStack: "true"
+    feature-gate.release.openshift.io/ExternalPlatform: "true"
   name: hostedcontrolplanes.hypershift.openshift.io
 spec:
   group: hypershift.openshift.io
@@ -94,9 +94,8 @@ spec:
                           Karpenter provisioner.
                         properties:
                           aws:
-                            description: |-
-                              aws specifies the AWS-specific configuration for Karpenter.
-                              Required when platform is "AWS", and forbidden otherwise.
+                            description: aws specifies the AWS-specific configuration
+                              for Karpenter.
                             properties:
                               roleARN:
                                 description: "roleARN specifies the ARN of the IAM
@@ -187,42 +186,11 @@ spec:
                             required:
                             - roleARN
                             type: object
-                          azure:
-                            description: |-
-                              azure specifies the Azure-specific configuration for Karpenter.
-                              Required when platform is "Azure", and forbidden otherwise.
-                            properties:
-                              clientID:
-                                description: |-
-                                  clientID is the client ID of the user-assigned managed identity Karpenter uses
-                                  to provision and manage Azure VMs in the hosted cluster's subscription.
-
-                                  The identity must have a federated credential that trusts the hosted cluster
-                                  OIDC issuer for subject system:serviceaccount:kube-system:karpenter.
-
-                                  The identity must be granted Virtual Machine Contributor, Network Contributor,
-                                  and Managed Identity Operator on the cluster resource group (and Network Contributor
-                                  on the VNet resource group when it differs).
-
-                                  The client ID must be a valid UUID. It should be 5 groups of hyphen separated hexadecimal characters in the form 8-4-4-4-12.
-                                maxLength: 36
-                                minLength: 36
-                                pattern: ^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$
-                                type: string
-                                x-kubernetes-validations:
-                                - message: the client ID of a managed identity must
-                                    be a valid UUID. It should be 5 groups of hyphen
-                                    separated hexadecimal characters in the form 8-4-4-4-12.
-                                  rule: self.matches('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')
-                            required:
-                            - clientID
-                            type: object
                           platform:
                             description: platform specifies the infrastructure platform
                               that Karpenter should provision nodes on.
                             enum:
                             - AWS
-                            - Azure
                             maxLength: 100
                             type: string
                         required:
@@ -232,9 +200,6 @@ spec:
                         - message: aws is required when platform is AWS, and forbidden
                             otherwise
                           rule: 'self.platform == ''AWS'' ? has(self.aws) : !has(self.aws)'
-                        - message: azure is required when platform is Azure, and forbidden
-                            otherwise
-                          rule: 'self.platform == ''Azure'' ? has(self.azure) : !has(self.azure)'
                       name:
                         description: name specifies the name of the provisioner to
                           use for automatic node management.
@@ -5733,6 +5698,73 @@ spec:
                       rule: '!has(self.private) || self.private.type != ''PrivateLink''
                         || self.azureAuthenticationConfig.azureAuthenticationConfigType
                         != ''WorkloadIdentities'' || has(self.azureAuthenticationConfig.workloadIdentities.controlPlaneOperator)'
+                  external:
+                    description: |-
+                      external specifies configuration for clusters whose platform is managed by a
+                      controller outside HyperShift.
+                    properties:
+                      hostedClusterTemplate:
+                        description: |-
+                          hostedClusterTemplate is a reference to an integrator-owned hosted cluster template
+                          in the same namespace as this HostedCluster. HyperShift instantiates the template
+                          into the control plane namespace, where the integrator's controller observes it and
+                          begins provisioning.
+
+                          The referenced object implements a contract published by HyperShift. It is not a
+                          Cluster API infrastructure template, even though it borrows the same
+                          template-and-instance shape. Everything else about the platform, including its name
+                          and whether it runs a cloud controller manager, is declared by the integrator on the
+                          instantiated object's status rather than configured here.
+
+                          It is immutable. The template is read once, when the instantiated object is created,
+                          so repointing it afterwards would silently have no effect.
+                        properties:
+                          apiGroup:
+                            description: |-
+                              apiGroup is the API group of the referenced template, for example example.io.
+                              The core group is not a valid value: the referenced object is always a custom
+                              resource.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                            x-kubernetes-validations:
+                            - message: apiGroup must be a lowercase RFC 1123 subdomain
+                              rule: self.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
+                          name:
+                            description: name is the name of the referenced template.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                            x-kubernetes-validations:
+                            - message: name must be a lowercase RFC 1123 subdomain
+                              rule: self.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
+                          resource:
+                            description: |-
+                              resource is the lowercase plural resource name of the referenced template, for
+                              example foohostedclustertemplates.
+
+                              HyperShift derives the resource of the object it creates by stripping the templates
+                              suffix, so foohostedclustertemplates yields foohostedclusters. Integrators must
+                              therefore name their custom resources conventionally; a resource that does not
+                              resolve is reported as invalid configuration on the HostedCluster.
+                            maxLength: 63
+                            minLength: 1
+                            type: string
+                            x-kubernetes-validations:
+                            - message: resource must be a lowercase alphanumeric plural
+                                resource name
+                              rule: self.matches('^[a-z][a-z0-9]*$')
+                        required:
+                        - apiGroup
+                        - name
+                        - resource
+                        type: object
+                        x-kubernetes-validations:
+                        - message: hostedClusterTemplate is immutable
+                          rule: self == oldSelf
+                    required:
+                    - hostedClusterTemplate
+                    type: object
                   ibmcloud:
                     description: ibmcloud defines IBMCloud specific settings for components
                     properties:
@@ -5926,547 +5958,6 @@ spec:
                     x-kubernetes-validations:
                     - message: Kubevirt GenerateID is required once set
                       rule: '!has(oldSelf.generateID) || has(self.generateID)'
-                  openstack:
-                    description: openstack specifies configuration for clusters running
-                      on OpenStack.
-                    properties:
-                      disableExternalNetwork:
-                        description: |-
-                          disableExternalNetwork specifies whether or not to attempt to connect the cluster
-                          to an external network. This allows for the creation of clusters when connecting
-                          to an external network is not possible or desirable, e.g. if using a provider network.
-                        type: boolean
-                      externalNetwork:
-                        description: |-
-                          externalNetwork is the OpenStack Network to be used to get public internet to the VMs.
-                          This option is ignored if DisableExternalNetwork is set to true.
-
-                          If ExternalNetwork is defined it must refer to exactly one external network.
-
-                          If ExternalNetwork is not defined or is empty the controller will use any
-                          existing external network as long as there is only one. It is an
-                          error if ExternalNetwork is not defined and there are multiple
-                          external networks unless DisableExternalNetwork is also set.
-
-                          If ExternalNetwork is not defined and there are no external networks
-                          the controller will proceed as though DisableExternalNetwork was set.
-                        maxProperties: 1
-                        minProperties: 1
-                        properties:
-                          filter:
-                            description: filter specifies a filter to select an OpenStack
-                              network. If provided, cannot be empty.
-                            minProperties: 1
-                            properties:
-                              description:
-                                description: description is the description of the
-                                  network to filter by.
-                                maxLength: 255
-                                type: string
-                              name:
-                                description: name is the name of the network to filter
-                                  by.
-                                maxLength: 255
-                                type: string
-                              notTags:
-                                description: |-
-                                  notTags is a list of tags to filter by. If specified, resources which
-                                  contain all of the given tags will be excluded from the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              notTagsAny:
-                                description: |-
-                                  notTagsAny is a list of tags to filter by. If specified, resources
-                                  which contain any of the given tags will be excluded from the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              projectID:
-                                description: projectID is the project ID of the network
-                                  to filter by.
-                                maxLength: 255
-                                type: string
-                              tags:
-                                description: |-
-                                  tags is a list of tags to filter by. If specified, the resource must
-                                  have all of the tags specified to be included in the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              tagsAny:
-                                description: |-
-                                  tagsAny is a list of tags to filter by. If specified, the resource
-                                  must have at least one of the tags specified to be included in the
-                                  result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                            type: object
-                          id:
-                            description: id is the ID of the network to use. If ID
-                              is provided, the other filters cannot be provided. Must
-                              be in UUID format.
-                            format: uuid
-                            maxLength: 36
-                            type: string
-                        type: object
-                      identityRef:
-                        description: |-
-                          identityRef is a reference to a secret holding OpenStack credentials
-                          to be used when reconciling the hosted cluster.
-                        properties:
-                          cloudName:
-                            description: cloudName specifies the name of the entry
-                              in the clouds.yaml file to use.
-                            maxLength: 255
-                            type: string
-                          name:
-                            description: |-
-                              name is the name of a secret in the same namespace as the resource being provisioned.
-                              The secret must contain a key named `clouds.yaml` which contains an OpenStack clouds.yaml file.
-                              The secret may optionally contain a key named `cacert` containing a PEM-encoded CA certificate.
-                            maxLength: 255
-                            type: string
-                        required:
-                        - cloudName
-                        - name
-                        type: object
-                      ingressFloatingIP:
-                        description: |-
-                          ingressFloatingIP is an available floating IP in your OpenStack cluster that will
-                          be associated with the OpenShift ingress port.
-                          When not specified, an IP address will be assigned randomly by the OpenStack cloud provider.
-                          When specified, the floating IP has to be pre-created.  If the
-                          specified value is not a floating IP or is already claimed, the
-                          OpenStack cloud provider won't be able to provision the load
-                          balancer.
-                          This value must be a valid IPv4 or IPv6 address.
-                        maxLength: 45
-                        type: string
-                        x-kubernetes-validations:
-                        - message: floatingIP must be a valid IPv4 or IPv6 address
-                          rule: isIP(self)
-                      managedSubnets:
-                        description: |-
-                          managedSubnets describe the OpenStack Subnet to be created. Cluster actuator will create a network,
-                          and a subnet with the defined DNSNameservers, AllocationPools and the CIDR defined in the HostedCluster
-                          MachineNetwork, and a router connected to the subnet. Currently only one IPv4
-                          subnet is supported.
-                        items:
-                          properties:
-                            allocationPools:
-                              description: |-
-                                allocationPools is an array of AllocationPool objects that will be applied to OpenStack Subnet being created.
-                                If set, OpenStack will only allocate these IPs for Machines. It will still be possible to create ports from
-                                outside of these ranges manually.
-                              items:
-                                properties:
-                                  end:
-                                    description: end represents the end of the AlloctionPool,
-                                      that is the highest IP of the pool.
-                                    maxLength: 255
-                                    type: string
-                                  start:
-                                    description: start represents the start of the
-                                      AllocationPool, that is the lowest IP of the
-                                      pool.
-                                    maxLength: 255
-                                    type: string
-                                required:
-                                - end
-                                - start
-                                type: object
-                              maxItems: 10
-                              type: array
-                            dnsNameservers:
-                              description: |-
-                                dnsNameservers holds a list of DNS server addresses that will be provided when creating
-                                the subnet. These addresses need to have the same IP version as CIDR.
-                              items:
-                                maxLength: 45
-                                type: string
-                              maxItems: 10
-                              type: array
-                          type: object
-                        maxItems: 1
-                        type: array
-                        x-kubernetes-list-type: atomic
-                      network:
-                        description: |-
-                          network specifies an existing network to use if no ManagedSubnets
-                          are specified.
-                        maxProperties: 1
-                        minProperties: 1
-                        properties:
-                          filter:
-                            description: filter specifies a filter to select an OpenStack
-                              network. If provided, cannot be empty.
-                            minProperties: 1
-                            properties:
-                              description:
-                                description: description is the description of the
-                                  network to filter by.
-                                maxLength: 255
-                                type: string
-                              name:
-                                description: name is the name of the network to filter
-                                  by.
-                                maxLength: 255
-                                type: string
-                              notTags:
-                                description: |-
-                                  notTags is a list of tags to filter by. If specified, resources which
-                                  contain all of the given tags will be excluded from the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              notTagsAny:
-                                description: |-
-                                  notTagsAny is a list of tags to filter by. If specified, resources
-                                  which contain any of the given tags will be excluded from the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              projectID:
-                                description: projectID is the project ID of the network
-                                  to filter by.
-                                maxLength: 255
-                                type: string
-                              tags:
-                                description: |-
-                                  tags is a list of tags to filter by. If specified, the resource must
-                                  have all of the tags specified to be included in the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              tagsAny:
-                                description: |-
-                                  tagsAny is a list of tags to filter by. If specified, the resource
-                                  must have at least one of the tags specified to be included in the
-                                  result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                            type: object
-                          id:
-                            description: id is the ID of the network to use. If ID
-                              is provided, the other filters cannot be provided. Must
-                              be in UUID format.
-                            format: uuid
-                            maxLength: 36
-                            type: string
-                        type: object
-                      networkMTU:
-                        description: networkMTU is the MTU for the network.
-                        maximum: 9000
-                        minimum: 1500
-                        type: integer
-                      router:
-                        description: |-
-                          router specifies an existing router to be used if ManagedSubnets are
-                          specified. If specified, no new router will be created.
-                        maxProperties: 1
-                        minProperties: 1
-                        properties:
-                          filter:
-                            description: filter specifies a filter to select an OpenStack
-                              router. If provided, cannot be empty.
-                            minProperties: 1
-                            properties:
-                              description:
-                                description: description is the description of the
-                                  router to filter by.
-                                maxLength: 255
-                                type: string
-                              name:
-                                description: name is the name of the router to filter
-                                  by.
-                                maxLength: 255
-                                type: string
-                              notTags:
-                                description: |-
-                                  notTags is a list of tags to filter by. If specified, resources which
-                                  contain all of the given tags will be excluded from the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              notTagsAny:
-                                description: |-
-                                  notTagsAny is a list of tags to filter by. If specified, resources
-                                  which contain any of the given tags will be excluded from the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              projectID:
-                                description: projectID is the project ID of the router
-                                  to filter by.
-                                maxLength: 255
-                                type: string
-                              tags:
-                                description: |-
-                                  tags is a list of tags to filter by. If specified, the resource must
-                                  have all of the tags specified to be included in the result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                              tagsAny:
-                                description: |-
-                                  tagsAny is a list of tags to filter by. If specified, the resource
-                                  must have at least one of the tags specified to be included in the
-                                  result.
-                                items:
-                                  description: |-
-                                    NeutronTag represents a tag on a Neutron resource.
-                                    It may not be empty and may not contain commas.
-                                  maxLength: 255
-                                  minLength: 1
-                                  pattern: ^[^,]+$
-                                  type: string
-                                maxItems: 50
-                                type: array
-                                x-kubernetes-list-type: set
-                            type: object
-                          id:
-                            description: id is the ID of the router to use. If ID
-                              is provided, the other filters cannot be provided. Must
-                              be in UUID format.
-                            format: uuid
-                            maxLength: 36
-                            type: string
-                        type: object
-                      subnets:
-                        description: |-
-                          subnets specifies existing subnets to use if not ManagedSubnets are
-                          specified. All subnets must be in the network specified by Network.
-                          There can be zero, one, or two subnets. If no subnets are specified,
-                          all subnets in Network will be used. If 2 subnets are specified, one
-                          must be IPv4 and the other IPv6.
-                        items:
-                          description: SubnetParam specifies an OpenStack subnet to
-                            use. It may be specified by either ID or filter, but not
-                            both.
-                          maxProperties: 1
-                          minProperties: 1
-                          properties:
-                            filter:
-                              description: filter specifies a filter to select the
-                                subnet. It must match exactly one subnet.
-                              minProperties: 1
-                              properties:
-                                cidr:
-                                  description: cidr is the CIDR of the subnet to filter
-                                    by.
-                                  maxLength: 45
-                                  type: string
-                                description:
-                                  description: description is the description of the
-                                    subnet to filter by.
-                                  maxLength: 255
-                                  type: string
-                                gatewayIP:
-                                  description: gatewayIP is the gateway IP of the
-                                    subnet to filter by.
-                                  maxLength: 45
-                                  type: string
-                                ipVersion:
-                                  description: ipVersion is the IP version of the
-                                    subnet to filter by.
-                                  maximum: 2147483647
-                                  minimum: 0
-                                  type: integer
-                                ipv6AddressMode:
-                                  description: ipv6AddressMode is the IPv6 address
-                                    mode of the subnet to filter by.
-                                  maxLength: 255
-                                  type: string
-                                ipv6RAMode:
-                                  description: ipv6RAMode is the IPv6 RA mode of the
-                                    subnet to filter by.
-                                  maxLength: 255
-                                  type: string
-                                name:
-                                  description: name is the name of the subnet to filter
-                                    by.
-                                  maxLength: 255
-                                  type: string
-                                notTags:
-                                  description: |-
-                                    notTags is a list of tags to filter by. If specified, resources which
-                                    contain all of the given tags will be excluded from the result.
-                                  items:
-                                    description: |-
-                                      NeutronTag represents a tag on a Neutron resource.
-                                      It may not be empty and may not contain commas.
-                                    maxLength: 255
-                                    minLength: 1
-                                    pattern: ^[^,]+$
-                                    type: string
-                                  maxItems: 50
-                                  type: array
-                                  x-kubernetes-list-type: set
-                                notTagsAny:
-                                  description: |-
-                                    notTagsAny is a list of tags to filter by. If specified, resources
-                                    which contain any of the given tags will be excluded from the result.
-                                  items:
-                                    description: |-
-                                      NeutronTag represents a tag on a Neutron resource.
-                                      It may not be empty and may not contain commas.
-                                    maxLength: 255
-                                    minLength: 1
-                                    pattern: ^[^,]+$
-                                    type: string
-                                  maxItems: 50
-                                  type: array
-                                  x-kubernetes-list-type: set
-                                projectID:
-                                  description: projectID is the project ID of the
-                                    subnet to filter by.
-                                  maxLength: 255
-                                  type: string
-                                tags:
-                                  description: |-
-                                    tags is a list of tags to filter by. If specified, the resource must
-                                    have all of the tags specified to be included in the result.
-                                  items:
-                                    description: |-
-                                      NeutronTag represents a tag on a Neutron resource.
-                                      It may not be empty and may not contain commas.
-                                    maxLength: 255
-                                    minLength: 1
-                                    pattern: ^[^,]+$
-                                    type: string
-                                  maxItems: 50
-                                  type: array
-                                  x-kubernetes-list-type: set
-                                tagsAny:
-                                  description: |-
-                                    tagsAny is a list of tags to filter by. If specified, the resource
-                                    must have at least one of the tags specified to be included in the
-                                    result.
-                                  items:
-                                    description: |-
-                                      NeutronTag represents a tag on a Neutron resource.
-                                      It may not be empty and may not contain commas.
-                                    maxLength: 255
-                                    minLength: 1
-                                    pattern: ^[^,]+$
-                                    type: string
-                                  maxItems: 50
-                                  type: array
-                                  x-kubernetes-list-type: set
-                              type: object
-                            id:
-                              description: id is the uuid of the subnet. It will not
-                                be validated.
-                              format: uuid
-                              maxLength: 36
-                              type: string
-                          type: object
-                        maxItems: 2
-                        type: array
-                        x-kubernetes-list-type: atomic
-                      tags:
-                        description: tags to set on all resources in cluster which
-                          support tags
-                        items:
-                          maxLength: 255
-                          type: string
-                        maxItems: 50
-                        type: array
-                        x-kubernetes-list-type: set
-                    required:
-                    - identityRef
-                    type: object
                   powervs:
                     description: |-
                       powervs specifies configuration for clusters running on IBMCloud Power VS Service.
@@ -6756,6 +6247,10 @@ spec:
                 required:
                 - type
                 type: object
+                x-kubernetes-validations:
+                - message: external is required when type is External, and forbidden
+                    otherwise
+                  rule: 'self.type == ''External'' ? has(self.external) : !has(self.external)'
               pullSecret:
                 description: pullSecret is a reference to a secret containing the
                   pull secret for the hosted control plane.

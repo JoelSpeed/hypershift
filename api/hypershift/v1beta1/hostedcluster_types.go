@@ -1392,6 +1392,10 @@ const (
 
 	// GCPPlatform represents Google Cloud Platform infrastructure.
 	GCPPlatform PlatformType = "GCP"
+
+	// ExternalPlatform represents infrastructure managed by a controller outside
+	// HyperShift, integrated through a published contract.
+	ExternalPlatform PlatformType = "External"
 )
 
 // List all PlatformType instances
@@ -1406,11 +1410,17 @@ func PlatformTypes() []PlatformType {
 		PowerVSPlatform,
 		OpenStackPlatform,
 		GCPPlatform,
+		ExternalPlatform,
 	}
 }
 
 // PlatformSpec specifies the underlying infrastructure provider for the cluster
 // and is used to configure platform specific behavior.
+//
+// The discriminated union rule below is applied to the external member only. The legacy
+// members predate the rule and retrofitting it would reject existing objects.
+//
+// +openshift:validation:FeatureGateAwareXValidation:featureGate=ExternalPlatform,rule="self.type == 'External' ? has(self.external) : !has(self.external)",message="external is required when type is External, and forbidden otherwise"
 type PlatformSpec struct {
 	// type is the type of infrastructure provider for the cluster.
 	//
@@ -1418,7 +1428,7 @@ type PlatformSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="Type is immutable"
 	// +immutable
 	// +openshift:validation:FeatureGateAwareEnum:featureGate="",enum=AWS;Azure;IBMCloud;KubeVirt;Agent;PowerVS;None
-	// +openshift:validation:FeatureGateAwareEnum:featureGate=OpenStack;GCPPlatform,enum=AWS;Azure;IBMCloud;KubeVirt;Agent;PowerVS;None;OpenStack;GCP
+	// +openshift:validation:FeatureGateAwareEnum:featureGate=OpenStack;GCPPlatform;ExternalPlatform,enum=AWS;Azure;IBMCloud;KubeVirt;Agent;PowerVS;None;OpenStack;GCP;External
 	// +required
 	Type PlatformType `json:"type"`
 
@@ -1466,6 +1476,14 @@ type PlatformSpec struct {
 	// +immutable
 	// +openshift:enable:FeatureGate=GCPPlatform
 	GCP *GCPPlatformSpec `json:"gcp,omitempty"`
+
+	// external specifies configuration for clusters whose platform is managed by a
+	// controller outside HyperShift.
+	//
+	// +optional
+	// +immutable
+	// +openshift:enable:FeatureGate=ExternalPlatform
+	External ExternalPlatformSpec `json:"external,omitzero"`
 }
 
 // IBMCloudPlatformSpec defines IBMCloud specific settings for components

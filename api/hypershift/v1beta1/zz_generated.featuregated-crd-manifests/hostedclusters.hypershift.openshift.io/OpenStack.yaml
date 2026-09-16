@@ -6870,6 +6870,7 @@ spec:
                     - None
                     - OpenStack
                     - GCP
+                    - External
                     maxLength: 100
                     type: string
                     x-kubernetes-validations:

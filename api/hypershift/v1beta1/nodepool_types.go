@@ -568,6 +568,11 @@ type NodePoolAutoScaling struct {
 
 // NodePoolPlatform specifies the underlying infrastructure provider for the
 // NodePool and is used to configure platform specific behavior.
+//
+// The discriminated union rule below is applied to the external member only. The legacy
+// members predate the rule and retrofitting it would reject existing objects.
+//
+// +openshift:validation:FeatureGateAwareXValidation:featureGate=ExternalPlatform,rule="self.type == 'External' ? has(self.external) : !has(self.external)",message="external is required when type is External, and forbidden otherwise"
 type NodePoolPlatform struct {
 	// type specifies the platform name.
 	//
@@ -575,7 +580,7 @@ type NodePoolPlatform struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="Type is immutable"
 	// +immutable
 	// +openshift:validation:FeatureGateAwareEnum:featureGate="",enum=AWS;Azure;IBMCloud;KubeVirt;Agent;PowerVS;None
-	// +openshift:validation:FeatureGateAwareEnum:featureGate=OpenStack;GCPPlatform,enum=AWS;Azure;IBMCloud;KubeVirt;Agent;PowerVS;None;OpenStack;GCP
+	// +openshift:validation:FeatureGateAwareEnum:featureGate=OpenStack;GCPPlatform;ExternalPlatform,enum=AWS;Azure;IBMCloud;KubeVirt;Agent;PowerVS;None;OpenStack;GCP;External
 	// +required
 	Type PlatformType `json:"type"`
 
@@ -618,6 +623,12 @@ type NodePoolPlatform struct {
 	// +optional
 	// +openshift:enable:FeatureGate=GCPPlatform
 	GCP *GCPNodePoolPlatform `json:"gcp,omitempty"`
+
+	// external specifies the configuration used when the platform is managed by a
+	// controller outside HyperShift.
+	// +optional
+	// +openshift:enable:FeatureGate=ExternalPlatform
+	External ExternalNodePoolPlatform `json:"external,omitzero"`
 }
 
 // We define our own condition type since metav1.Condition has validation

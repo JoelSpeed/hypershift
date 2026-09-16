@@ -211,6 +211,7 @@ hostedclusters.hypershift.openshift.io:
   - ExternalOIDCExternalClaimsSourcing
   - ExternalOIDCWithUIDAndExtraClaimMappings
   - ExternalOIDCWithUpstreamParity
+  - ExternalPlatform
   - GCPPlatform
   - HCPEtcdBackup
   - HCPUserFacingOperatorLogs
@@ -290,6 +291,7 @@ hostedcontrolplanes.hypershift.openshift.io:
   - ExternalOIDCExternalClaimsSourcing
   - ExternalOIDCWithUIDAndExtraClaimMappings
   - ExternalOIDCWithUpstreamParity
+  - ExternalPlatform
   - GCPPlatform
   - HCPEtcdBackup
   - HCPUserFacingOperatorLogs
@@ -324,6 +326,7 @@ nodepools.hypershift.openshift.io:
   Capability: ""
   Category: ""
   FeatureGates:
+  - ExternalPlatform
   - GCPPlatform
   - OSStreams
   - OpenStack

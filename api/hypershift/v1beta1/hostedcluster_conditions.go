@@ -306,6 +306,15 @@ const (
 	// False: re-encryption is in progress or has failed.
 	// Absent: encryption is not configured.
 	EtcdDataEncryptionUpToDate ConditionType = "EtcdDataEncryptionUpToDate"
+
+	// ExternalInfrastructureReady reports whether the integrator's controller has
+	// finished provisioning infrastructure for an External platform HostedCluster.
+	// It is deliberately distinct from InfrastructureReady, which tracks the
+	// HostedControlPlane's own management cluster Services.
+	//
+	// The message is mirrored verbatim from the integrator's object, so it is the
+	// integrator's user-facing error channel. Only present on External platform clusters.
+	ExternalInfrastructureReady ConditionType = "ExternalInfrastructureReady"
 )
 
 // Reasons.
@@ -326,6 +335,16 @@ const (
 
 	InfraStatusFailureReason           = "InfraStatusFailure"
 	WaitingOnInfrastructureReadyReason = "WaitingOnInfrastructureReady"
+
+	// Reasons for ExternalInfrastructureReady.
+
+	// ExternalInfrastructureNotFoundReason indicates the instantiated hosted cluster
+	// object is absent from the control plane namespace, usually because the integrator's
+	// CRDs are not installed.
+	ExternalInfrastructureNotFoundReason = "ExternalInfrastructureNotFound"
+	// WaitingOnExternalProviderReason indicates the object exists and the integrator's
+	// controller has not yet reported it ready.
+	WaitingOnExternalProviderReason = "WaitingOnExternalProvider"
 
 	EtcdQuorumAvailableReason     = "QuorumAvailable"
 	EtcdWaitingForQuorumReason    = "EtcdWaitingForQuorum"

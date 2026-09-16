@@ -1,0 +1,241 @@
+apiVersion: apiextensions.k8s.io/v1
+name: "NodePool External platform validation"
+crdName: nodepools.hypershift.openshift.io
+featureGates:
+  - ExternalPlatform
+version: v1beta1
+tests:
+  onCreate:
+  # --- union discriminator ---
+  - name: When platform type is External and external is set it should pass
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: my-machines
+
+  - name: When platform type is External and external is omitted it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+    expectedError: "external is required when type is External, and forbidden otherwise"
+
+  - name: When platform type is not External and external is set it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: None
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: my-machines
+    expectedError: "external is required when type is External, and forbidden otherwise"
+
+  # --- machineTemplate reference validation ---
+  - name: When machineTemplate is omitted it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external: {}
+    expectedError: "machineTemplate: Required value"
+
+  - name: When machineTemplate apiGroup is not a Cluster API group it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: example.io
+              resource: foomachinetemplates
+              name: my-machines
+    expectedError: "machineTemplate.apiGroup must be a Cluster API group"
+
+  - name: When machineTemplate apiGroup is not a lowercase subdomain it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: Infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: my-machines
+    expectedError: "apiGroup must be a lowercase RFC 1123 subdomain"
+
+  - name: When machineTemplate resource is not a lowercase alphanumeric name it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: FooMachineTemplate
+              name: my-machines
+    expectedError: "resource must be a lowercase alphanumeric plural resource name"
+
+  - name: When machineTemplate name is not a lowercase subdomain it should fail
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: My_Machines
+    expectedError: "name must be a lowercase RFC 1123 subdomain"
+
+  onUpdate:
+  # --- the machine template reference is mutable: editing it is how a rolling upgrade is triggered ---
+  - name: When machineTemplate name is changed it should pass
+    initial: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: my-machines
+    updated: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: my-machines-v2
+    expected: |
+      apiVersion: hypershift.openshift.io/v1beta1
+      kind: NodePool
+      spec:
+        arch: amd64
+        clusterName: some-cluster
+        management:
+          autoRepair: false
+          upgradeType: Replace
+          replace:
+            rollingUpdate:
+              maxSurge: 1
+              maxUnavailable: 0
+            strategy: RollingUpdate
+        release:
+          image: quay.io/openshift-release-dev/ocp-release:4.17.0-rc.0-x86_64
+        replicas: 0
+        platform:
+          type: External
+          external:
+            machineTemplate:
+              apiGroup: infrastructure.cluster.x-k8s.io
+              resource: foomachinetemplates
+              name: my-machines-v2

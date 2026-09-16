@@ -7336,6 +7336,73 @@ spec:
                       rule: '!has(self.private) || self.private.type != ''PrivateLink''
                         || self.azureAuthenticationConfig.azureAuthenticationConfigType
                         != ''WorkloadIdentities'' || has(self.azureAuthenticationConfig.workloadIdentities.controlPlaneOperator)'
+                  external:
+                    description: |-
+                      external specifies configuration for clusters whose platform is managed by a
+                      controller outside HyperShift.
+                    properties:
+                      hostedClusterTemplate:
+                        description: |-
+                          hostedClusterTemplate is a reference to an integrator-owned hosted cluster template
+                          in the same namespace as this HostedCluster. HyperShift instantiates the template
+                          into the control plane namespace, where the integrator's controller observes it and
+                          begins provisioning.
+
+                          The referenced object implements a contract published by HyperShift. It is not a
+                          Cluster API infrastructure template, even though it borrows the same
+                          template-and-instance shape. Everything else about the platform, including its name
+                          and whether it runs a cloud controller manager, is declared by the integrator on the
+                          instantiated object's status rather than configured here.
+
+                          It is immutable. The template is read once, when the instantiated object is created,
+                          so repointing it afterwards would silently have no effect.
+                        properties:
+                          apiGroup:
+                            description: |-
+                              apiGroup is the API group of the referenced template, for example example.io.
+                              The core group is not a valid value: the referenced object is always a custom
+                              resource.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                            x-kubernetes-validations:
+                            - message: apiGroup must be a lowercase RFC 1123 subdomain
+                              rule: self.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
+                          name:
+                            description: name is the name of the referenced template.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                            x-kubernetes-validations:
+                            - message: name must be a lowercase RFC 1123 subdomain
+                              rule: self.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
+                          resource:
+                            description: |-
+                              resource is the lowercase plural resource name of the referenced template, for
+                              example foohostedclustertemplates.
+
+                              HyperShift derives the resource of the object it creates by stripping the templates
+                              suffix, so foohostedclustertemplates yields foohostedclusters. Integrators must
+                              therefore name their custom resources conventionally; a resource that does not
+                              resolve is reported as invalid configuration on the HostedCluster.
+                            maxLength: 63
+                            minLength: 1
+                            type: string
+                            x-kubernetes-validations:
+                            - message: resource must be a lowercase alphanumeric plural
+                                resource name
+                              rule: self.matches('^[a-z][a-z0-9]*$')
+                        required:
+                        - apiGroup
+                        - name
+                        - resource
+                        type: object
+                        x-kubernetes-validations:
+                        - message: hostedClusterTemplate is immutable
+                          rule: self == oldSelf
+                    required:
+                    - hostedClusterTemplate
+                    type: object
                   gcp:
                     description: gcp specifies configuration for clusters running
                       on Google Cloud Platform.
@@ -8787,6 +8854,7 @@ spec:
                     - None
                     - OpenStack
                     - GCP
+                    - External
                     maxLength: 100
                     type: string
                     x-kubernetes-validations:
@@ -8795,6 +8863,10 @@ spec:
                 required:
                 - type
                 type: object
+                x-kubernetes-validations:
+                - message: external is required when type is External, and forbidden
+                    otherwise
+                  rule: 'self.type == ''External'' ? has(self.external) : !has(self.external)'
               pullSecret:
                 description: |-
                   pullSecret is a local reference to a Secret that must have a ".dockerconfigjson" key whose content must be a valid Openshift pull secret JSON.
