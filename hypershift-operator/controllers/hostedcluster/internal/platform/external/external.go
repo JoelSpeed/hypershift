@@ -22,10 +22,10 @@ package external
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/upsert"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -46,14 +46,6 @@ const (
 	// because the name is only known once the integrator has reported it, and this label
 	// has to be set at create time.
 	ExternalPlatformGroupLabel = "hypershift.openshift.io/external-platform-group"
-
-	// templateResourceSuffix is the suffix the API requires on the resource name of a
-	// template, and which is stripped to derive the resource of the instantiated object:
-	// foohostedclustertemplates -> foohostedclusters.
-	templateResourceSuffix = "templates"
-
-	// instanceResourceSuffix replaces templateResourceSuffix. Both resources are plural.
-	instanceResourceSuffix = "s"
 
 	// readyConditionType is the single condition the contract asks the integrator to set
 	// on the hosted cluster object. Its message is mirrored verbatim onto the
@@ -119,11 +111,11 @@ func (p External) reconcileHostedClusterObject(ctx context.Context, createOrUpda
 	ref := hcluster.Spec.Platform.External.HostedClusterTemplate
 	mapper := p.uncachedClient.RESTMapper()
 
-	templateGVK, err := kindFor(mapper, ref.APIGroup, ref.Resource)
+	templateGVK, err := externalplatform.KindFor(mapper, ref.APIGroup, ref.Resource)
 	if err != nil {
 		return nil, err
 	}
-	instanceGVK, err := HostedClusterObjectGVK(mapper, ref)
+	instanceGVK, err := externalplatform.HostedClusterObjectGVK(mapper, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +232,7 @@ func InfrastructureReadyCondition(ctx context.Context, uncachedClient client.Cli
 	}
 
 	ref := hcluster.Spec.Platform.External.HostedClusterTemplate
-	gvk, err := HostedClusterObjectGVK(uncachedClient.RESTMapper(), ref)
+	gvk, err := externalplatform.HostedClusterObjectGVK(uncachedClient.RESTMapper(), ref)
 	if err != nil {
 		if meta.IsNoMatchError(err) {
 			condition.Message = fmt.Sprintf("The %s custom resource definition is not installed on the management cluster", err.Error())
@@ -314,26 +306,6 @@ func readyCondition(hostedClusterObject *unstructured.Unstructured) (*metav1.Con
 		}, nil
 	}
 	return nil, nil
-}
-
-// HostedClusterObjectGVK resolves the GVK of the instantiated hosted cluster object from
-// the template reference, by stripping the templates suffix off the resource:
-// foohostedclustertemplates -> foohostedclusters.
-func HostedClusterObjectGVK(mapper meta.RESTMapper, ref hyperv1.ExternalTemplateReference) (schema.GroupVersionKind, error) {
-	if !strings.HasSuffix(ref.Resource, templateResourceSuffix) {
-		return schema.GroupVersionKind{}, fmt.Errorf("hosted cluster template resource %q must end in %q", ref.Resource, templateResourceSuffix)
-	}
-	instanceResource := strings.TrimSuffix(ref.Resource, templateResourceSuffix) + instanceResourceSuffix
-	return kindFor(mapper, ref.APIGroup, instanceResource)
-}
-
-// kindFor resolves a group and plural resource to the GVK of its preferred served version.
-func kindFor(mapper meta.RESTMapper, apiGroup, resource string) (schema.GroupVersionKind, error) {
-	gvk, err := mapper.KindFor(schema.GroupVersionResource{Group: apiGroup, Resource: resource})
-	if err != nil {
-		return schema.GroupVersionKind{}, fmt.Errorf("failed to resolve %s.%s: %w", resource, apiGroup, err)
-	}
-	return gvk, nil
 }
 
 // CAPIProviderDeploymentSpec returns nil because the integrator deploys and owns its own
