@@ -1299,6 +1299,13 @@ func (r *HostedControlPlaneReconciler) reconcileCPOV2(ctx context.Context, hcp *
 		}
 	}
 
+	// Must run before the ignition-server configs below: they render the machine config
+	// server's copy of the guest Infrastructure, which is derived from the declaration this
+	// records.
+	if err := r.reconcileExternalPlatformStatus(ctx, hcp); err != nil {
+		return fmt.Errorf("failed to reconcile external platform status: %w", err)
+	}
+
 	if _, exists := hcp.Annotations[hyperv1.DisableIgnitionServerAnnotation]; !exists {
 		// Reconcile Ignition-server configs
 		r.Log.Info("Reconciling ignition-server configs")

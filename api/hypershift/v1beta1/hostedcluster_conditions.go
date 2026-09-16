@@ -315,6 +315,17 @@ const (
 	// The message is mirrored verbatim from the integrator's object, so it is the
 	// integrator's user-facing error channel. Only present on External platform clusters.
 	ExternalInfrastructureReady ConditionType = "ExternalInfrastructureReady"
+
+	// ValidExternalPlatformDeclaration reports whether the platform declaration the
+	// integrator published, naming the platform and stating whether it runs a cloud
+	// controller manager, has been observed and recorded on status.platform.external.
+	//
+	// The declaration reaches the guest cluster's Infrastructure and therefore the machine
+	// config server, so it is recorded once and never re-read. This condition is False
+	// while HyperShift is waiting for it, and False again if the integrator later
+	// contradicts what was recorded, which HyperShift reports rather than acts on.
+	// Only present on External platform clusters.
+	ValidExternalPlatformDeclaration ConditionType = "ValidExternalPlatformDeclaration"
 )
 
 // Reasons.
@@ -343,8 +354,19 @@ const (
 	// CRDs are not installed.
 	ExternalInfrastructureNotFoundReason = "ExternalInfrastructureNotFound"
 	// WaitingOnExternalProviderReason indicates the object exists and the integrator's
-	// controller has not yet reported it ready.
+	// controller has not yet reported it ready, or has not yet published its platform
+	// declaration.
 	WaitingOnExternalProviderReason = "WaitingOnExternalProvider"
+
+	// Reasons for ValidExternalPlatformDeclaration.
+
+	// ExternalPlatformDeclarationInvalidReason indicates the integrator published a
+	// declaration that does not satisfy the contract, for example one that names the
+	// platform without stating whether a cloud controller manager runs.
+	ExternalPlatformDeclarationInvalidReason = "ExternalPlatformDeclarationInvalid"
+	// ExternalPlatformDeclarationChangedReason indicates the integrator changed its
+	// declaration after HyperShift recorded it. The recorded value continues to be used.
+	ExternalPlatformDeclarationChangedReason = "ExternalPlatformDeclarationChanged"
 
 	EtcdQuorumAvailableReason     = "QuorumAvailable"
 	EtcdWaitingForQuorumReason    = "EtcdWaitingForQuorum"

@@ -894,6 +894,12 @@ func (r *HostedClusterReconciler) reconcile(ctx context.Context, req ctrl.Reques
 			hyperv1.EtcdBackupSucceeded,
 			hyperv1.ConfigOperatorReconciliationSucceeded,
 		}
+		if hcluster.Spec.Platform.Type == hyperv1.ExternalPlatform {
+			// Conditionally, because every entry in this list that the HCP does not set
+			// lands on the HostedCluster as Unknown, and a permanently Unknown condition
+			// about a platform the cluster does not use is worse than no condition.
+			hcpConditions = append(hcpConditions, hyperv1.ValidExternalPlatformDeclaration)
+		}
 
 		for _, conditionType := range hcpConditions {
 			condition := &metav1.Condition{

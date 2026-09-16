@@ -87,8 +87,10 @@ func ExpectedHCConditions(hostedCluster *hyperv1.HostedCluster) map[hyperv1.Cond
 		// conditions[hyperv1.ValidGCPKMSConfig] = metav1.ConditionUnknown
 	case hyperv1.ExternalPlatform:
 		// A healthy External cluster is one whose integrator has reported that it finished
-		// provisioning. Nothing else about the platform is HyperShift's to assert.
+		// provisioning, and whose declaration of what the platform is has been recorded.
+		// Nothing else about the platform is HyperShift's to assert.
 		conditions[hyperv1.ExternalInfrastructureReady] = metav1.ConditionTrue
+		conditions[hyperv1.ValidExternalPlatformDeclaration] = metav1.ConditionTrue
 	case hyperv1.KubevirtPlatform:
 		if hostedCluster.Spec.Networking.NetworkType == hyperv1.OVNKubernetes {
 			if hostedCluster.Annotations[hyperv1.ManagementPlatformAnnotation] == string(hyperv1.AWSPlatform) {
