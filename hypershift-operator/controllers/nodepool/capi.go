@@ -17,6 +17,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -55,6 +56,13 @@ type CAPI struct {
 	*Token
 	capiClusterName       string
 	scaleFromZeroPlatform hyperv1.PlatformType
+	// uncachedClient talks to the API server directly rather than through the operator's
+	// cache. It is only used for the External platform's machine templates, whose kinds the
+	// integrator defines: the operator's client caches unstructured objects, so a read
+	// through it would start an informer that LIST/WATCHes a CRD which may not be
+	// installed, retrying forever and wedging reconciliation for every NodePool on the
+	// management cluster.
+	uncachedClient client.Client
 	upsert.ApplyProvider
 }
 
@@ -106,7 +114,13 @@ func (c *CAPI) Reconcile(ctx context.Context) error {
 		return err
 	}
 
-	if result, err := c.ApplyManifest(ctx, c.Client, template); err != nil {
+	// ApplyManifest reads before it writes, so it has to use the same client the template
+	// was resolved with, not the cached one.
+	templateClient, err := c.machineTemplateClient()
+	if err != nil {
+		return err
+	}
+	if result, err := c.ApplyManifest(ctx, templateClient, template); err != nil {
 		return err
 	} else {
 		log.Info("Reconciled Machine template", "result", result)
@@ -274,15 +288,18 @@ func (c *CAPI) cleanupMachineTemplates(ctx context.Context, log logr.Logger, nod
 
 	ref := filtered[0].Spec.Template.Spec.InfrastructureRef
 	machineTemplates := new(unstructured.UnstructuredList)
-	// v1beta2 ContractVersionedObjectReference has no APIVersion; reconstruct from scheme.
-	versions := api.Scheme.VersionsForGroupKind(schema.GroupKind{Group: ref.APIGroup, Kind: ref.Kind})
-	if len(versions) == 0 {
-		return fmt.Errorf("no versions registered for GroupKind %s/%s", ref.APIGroup, ref.Kind)
+	// v1beta2 ContractVersionedObjectReference has no APIVersion; reconstruct it.
+	apiVersion, err := c.machineTemplateAPIVersion(ref.APIGroup, ref.Kind)
+	if err != nil {
+		return err
 	}
-	apiVersion := schema.GroupVersion{Group: ref.APIGroup, Version: versions[0].Version}.String()
 	machineTemplates.SetAPIVersion(apiVersion)
 	machineTemplates.SetKind(ref.Kind)
-	if err := c.List(ctx, machineTemplates, client.InNamespace(controlPlaneNamespace)); err != nil {
+	lister, err := c.machineTemplateClient()
+	if err != nil {
+		return err
+	}
+	if err := lister.List(ctx, machineTemplates, client.InNamespace(controlPlaneNamespace)); err != nil {
 		return fmt.Errorf("failed to list MachineTemplates: %w", err)
 	}
 
@@ -905,6 +922,8 @@ func (c *CAPI) machineTemplateBuilders(ctx context.Context) (client.Object, erro
 		template, err = c.openstackMachineTemplate(templateNameGenerator)
 	case hyperv1.GCPPlatform:
 		template, err = c.gcpMachineTemplate(ctx, templateNameGenerator)
+	case hyperv1.ExternalPlatform:
+		template, err = c.externalMachineTemplate(ctx, templateNameGenerator)
 	default:
 		// TODO(alberto): Consider signal in a condition.
 		err = fmt.Errorf("unsupported platform type: %s", c.nodePool.Spec.Platform.Type)
@@ -1344,6 +1363,7 @@ func (c *CAPI) listMachineTemplates() ([]client.Object, error) {
 	machineTemplateList := &unstructured.UnstructuredList{}
 	nodePool := c.nodePool
 	var gvk schema.GroupVersionKind
+	var listOptions []client.ListOption
 	var err error
 	switch nodePool.Spec.Platform.Type {
 	// Define the desired template type and mutateTemplate function.
@@ -1377,10 +1397,32 @@ func (c *CAPI) listMachineTemplates() ([]client.Object, error) {
 		if err != nil {
 			return nil, err
 		}
+	case hyperv1.ExternalPlatform:
+		gvk, err = c.externalMachineTemplateGVK()
+		if err != nil {
+			if meta.IsNoMatchError(err) {
+				// The integrator's CRD is not installed, so nothing of that kind can exist
+				// to collect. This has to be tolerated rather than returned: the only
+				// caller is NodePool deletion, and uninstalling the integrator must not
+				// leave NodePools undeletable.
+				return nil, nil
+			}
+			return nil, err
+		}
+		// Scoped to the control plane namespace, unlike the in-tree platforms, which list
+		// cluster wide and rely on the annotation filter alone. The referenced template
+		// the user wrote shares this kind and lives in the NodePool's own namespace, so a
+		// cluster wide list would put it one stray copied annotation away from deletion.
+		listOptions = append(listOptions, client.InNamespace(c.controlplaneNamespace))
 	default:
 		// need a default path that returns a value that does not cause the hypershift operator to crash
 		// if no explicit machineTemplate is defined safe to assume none exist
 		return nil, nil
+	}
+
+	lister, err := c.machineTemplateClient()
+	if err != nil {
+		return nil, err
 	}
 
 	machineTemplateList.SetGroupVersionKind(schema.GroupVersionKind{
@@ -1388,7 +1430,7 @@ func (c *CAPI) listMachineTemplates() ([]client.Object, error) {
 		Kind:    gvk.Kind,
 		Version: gvk.Version,
 	})
-	if err := c.List(context.Background(), machineTemplateList); err != nil {
+	if err := lister.List(context.Background(), machineTemplateList, listOptions...); err != nil {
 		return nil, fmt.Errorf("failed to list MachineTemplates: %w", err)
 	}
 	var filtered []client.Object

@@ -102,6 +102,11 @@ const (
 
 type NodePoolReconciler struct {
 	client.Client
+	// UncachedClient reads and writes directly against the API server. It exists for the
+	// External platform, whose machine template kinds are defined by an integrator rather
+	// than compiled into the operator, and which therefore must not be read through a
+	// cache that would start an informer on a possibly absent CRD.
+	UncachedClient  client.Client
 	recorder        record.EventRecorder
 	ReleaseProvider releaseinfo.Provider
 	upsert.CreateOrUpdateProvider
@@ -136,6 +141,14 @@ var capiRelatedNodePoolManagedResourcesToWatch = []client.Object{
 }
 
 func (r *NodePoolReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.UncachedClient == nil {
+		uncachedClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+		if err != nil {
+			return fmt.Errorf("failed to create uncached client: %w", err)
+		}
+		r.UncachedClient = uncachedClient
+	}
+
 	bldr := ctrl.NewControllerManagedBy(mgr).
 		For(&hyperv1.NodePool{}, builder.WithPredicates(supportutil.PredicatesForHostedClusterAnnotationScoping(mgr.GetClient()))).
 		// We want to reconcile when the HostedCluster IgnitionEndpoint is available.
@@ -451,6 +464,7 @@ func (r *NodePoolReconciler) reconcile(ctx context.Context, hcluster *hyperv1.Ho
 		return ctrl.Result{}, err
 	}
 	capi.scaleFromZeroPlatform = r.ScaleFromZeroPlatform
+	capi.uncachedClient = r.UncachedClient
 	if isPaused, duration := supportutil.IsReconciliationPaused(log, nodePool.Spec.PausedUntil); isPaused {
 		if err := capi.Pause(ctx); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error pausing CAPI: %w", err)
@@ -602,6 +616,7 @@ func (r *NodePoolReconciler) delete(ctx context.Context, nodePool *hyperv1.NodeP
 				rolloutConfig:         &rolloutConfig{},
 			},
 		},
+		uncachedClient: r.UncachedClient,
 	}
 	md := capi.machineDeployment()
 	ms := capi.machineSet()
