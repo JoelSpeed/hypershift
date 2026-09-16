@@ -94,8 +94,9 @@ spec:
                           Karpenter provisioner.
                         properties:
                           aws:
-                            description: aws specifies the AWS-specific configuration
-                              for Karpenter.
+                            description: |-
+                              aws specifies the AWS-specific configuration for Karpenter.
+                              Required when platform is "AWS", and forbidden otherwise.
                             properties:
                               roleARN:
                                 description: "roleARN specifies the ARN of the IAM
@@ -186,11 +187,42 @@ spec:
                             required:
                             - roleARN
                             type: object
+                          azure:
+                            description: |-
+                              azure specifies the Azure-specific configuration for Karpenter.
+                              Required when platform is "Azure", and forbidden otherwise.
+                            properties:
+                              clientID:
+                                description: |-
+                                  clientID is the client ID of the user-assigned managed identity Karpenter uses
+                                  to provision and manage Azure VMs in the hosted cluster's subscription.
+
+                                  The identity must have a federated credential that trusts the hosted cluster
+                                  OIDC issuer for subject system:serviceaccount:kube-system:karpenter.
+
+                                  The identity must be granted Virtual Machine Contributor, Network Contributor,
+                                  and Managed Identity Operator on the cluster resource group (and Network Contributor
+                                  on the VNet resource group when it differs).
+
+                                  The client ID must be a valid UUID. It should be 5 groups of hyphen separated hexadecimal characters in the form 8-4-4-4-12.
+                                maxLength: 36
+                                minLength: 36
+                                pattern: ^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$
+                                type: string
+                                x-kubernetes-validations:
+                                - message: the client ID of a managed identity must
+                                    be a valid UUID. It should be 5 groups of hyphen
+                                    separated hexadecimal characters in the form 8-4-4-4-12.
+                                  rule: self.matches('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')
+                            required:
+                            - clientID
+                            type: object
                           platform:
                             description: platform specifies the infrastructure platform
                               that Karpenter should provision nodes on.
                             enum:
                             - AWS
+                            - Azure
                             maxLength: 100
                             type: string
                         required:
@@ -200,6 +232,9 @@ spec:
                         - message: aws is required when platform is AWS, and forbidden
                             otherwise
                           rule: 'self.platform == ''AWS'' ? has(self.aws) : !has(self.aws)'
+                        - message: azure is required when platform is Azure, and forbidden
+                            otherwise
+                          rule: 'self.platform == ''Azure'' ? has(self.azure) : !has(self.azure)'
                       name:
                         description: name specifies the name of the provisioner to
                           use for automatic node management.
@@ -7300,6 +7335,49 @@ spec:
                           addition to any security groups specified in the NodePool.
                         maxLength: 255
                         type: string
+                    type: object
+                  external:
+                    description: |-
+                      external contains platform-specific status for the External platform, as declared by
+                      the integrator that owns it. It is absent until the integrator has published the
+                      declaration, which HyperShift waits for before it allows any node to boot.
+                    properties:
+                      cloudControllerManager:
+                        description: |-
+                          cloudControllerManager declares whether the integrator runs a cloud controller
+                          manager for this platform.
+                        properties:
+                          state:
+                            description: |-
+                              state is either External or None.
+
+                              External means the integrator runs a cloud controller manager. Kubelets are started
+                              with --cloud-provider=external, so nodes join tainted with
+                              node.cloudprovider.kubernetes.io/uninitialized and the integrator's cloud controller
+                              manager must remove that taint. A cluster whose cloud controller manager never
+                              arrives has a healthy control plane and no schedulable nodes.
+
+                              None means no cloud controller manager runs. Nodes join untainted, and the
+                              integrator's machine controller is responsible for node addresses and provider IDs.
+                            enum:
+                            - External
+                            - None
+                            type: string
+                        required:
+                        - state
+                        type: object
+                      name:
+                        description: |-
+                          name is the platform's name as declared by the integrator, for example ExampleCloud.
+                          It is propagated verbatim to the guest cluster's Infrastructure at
+                          status.platformStatus.external.platformName, which is where everything running in
+                          the cluster looks to identify the platform it is running on.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                    required:
+                    - cloudControllerManager
+                    - name
                     type: object
                 type: object
               ready:

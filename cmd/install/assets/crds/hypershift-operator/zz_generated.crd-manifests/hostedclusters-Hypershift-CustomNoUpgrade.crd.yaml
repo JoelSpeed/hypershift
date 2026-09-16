@@ -11032,6 +11032,49 @@ spec:
                         maxLength: 255
                         type: string
                     type: object
+                  external:
+                    description: |-
+                      external contains platform-specific status for the External platform, as declared by
+                      the integrator that owns it. It is absent until the integrator has published the
+                      declaration, which HyperShift waits for before it allows any node to boot.
+                    properties:
+                      cloudControllerManager:
+                        description: |-
+                          cloudControllerManager declares whether the integrator runs a cloud controller
+                          manager for this platform.
+                        properties:
+                          state:
+                            description: |-
+                              state is either External or None.
+
+                              External means the integrator runs a cloud controller manager. Kubelets are started
+                              with --cloud-provider=external, so nodes join tainted with
+                              node.cloudprovider.kubernetes.io/uninitialized and the integrator's cloud controller
+                              manager must remove that taint. A cluster whose cloud controller manager never
+                              arrives has a healthy control plane and no schedulable nodes.
+
+                              None means no cloud controller manager runs. Nodes join untainted, and the
+                              integrator's machine controller is responsible for node addresses and provider IDs.
+                            enum:
+                            - External
+                            - None
+                            type: string
+                        required:
+                        - state
+                        type: object
+                      name:
+                        description: |-
+                          name is the platform's name as declared by the integrator, for example ExampleCloud.
+                          It is propagated verbatim to the guest cluster's Infrastructure at
+                          status.platformStatus.external.platformName, which is where everything running in
+                          the cluster looks to identify the platform it is running on.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                    required:
+                    - cloudControllerManager
+                    - name
+                    type: object
                 type: object
               secretEncryption:
                 description: secretEncryption tracks the state of secret encryption

@@ -2784,6 +2784,13 @@ type PlatformStatus struct {
 	// aws contains platform-specific status for AWS
 	// +optional
 	AWS *AWSPlatformStatus `json:"aws,omitempty"`
+
+	// external contains platform-specific status for the External platform, as declared by
+	// the integrator that owns it. It is absent until the integrator has published the
+	// declaration, which HyperShift waits for before it allows any node to boot.
+	// +openshift:enable:FeatureGate=ExternalPlatform
+	// +optional
+	External ExternalPlatformStatus `json:"external,omitzero"`
 }
 
 // ClusterVersionStatus reports the status of the cluster versioning,

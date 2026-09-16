@@ -170,3 +170,78 @@ func TestExternalNodePoolPlatformSerializationCompatibility(t *testing.T) {
 		t.Errorf("external should be the zero value after N-1 round-trip, got %+v", roundTripped.External)
 	}
 }
+
+// platformStatusNMinus1 represents the N-1 version of PlatformStatus: one that has no
+// knowledge of the External platform at all.
+type platformStatusNMinus1 struct {
+	AWS *AWSPlatformStatus `json:"aws,omitempty"` //nolint:kubeapilinter // test-only N-1 compat struct
+}
+
+// TestPlatformStatusExternalOmittedWhenUnset guards the same hazard as its spec
+// counterpart, and one more besides. PlatformStatus is shared by every platform, so an
+// ExternalPlatformStatus that serialized as an empty object would put an `external` key
+// carrying a name that fails MinLength on the status of every AWS HostedCluster in the
+// fleet.
+func TestPlatformStatusExternalOmittedWhenUnset(t *testing.T) {
+	tests := []struct {
+		name    string
+		current PlatformStatus
+	}{
+		{
+			name:    "When the status is empty it should omit external",
+			current: PlatformStatus{},
+		},
+		{
+			name:    "When the platform is AWS it should omit external",
+			current: PlatformStatus{AWS: &AWSPlatformStatus{DefaultWorkerSecurityGroupID: "sg-123"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.current)
+			if err != nil {
+				t.Fatalf("failed to marshal current struct: %v", err)
+			}
+			if strings.Contains(string(data), `"external"`) {
+				t.Errorf("external should be omitted when unset, got %s", string(data))
+			}
+		})
+	}
+}
+
+func TestExternalPlatformStatusSerializationCompatibility(t *testing.T) {
+	current := PlatformStatus{
+		External: ExternalPlatformStatus{
+			Name: "ExampleCloud",
+			CloudControllerManager: ExternalCloudControllerManagerStatus{
+				State: ExternalCloudControllerManager,
+			},
+		},
+	}
+
+	data, err := json.Marshal(current)
+	if err != nil {
+		t.Fatalf("failed to marshal current struct: %v", err)
+	}
+	if !strings.Contains(string(data), `"external":{"name":"ExampleCloud","cloudControllerManager":{"state":"External"}}`) {
+		t.Errorf("unexpected JSON output: %s", string(data))
+	}
+
+	var nMinus1 platformStatusNMinus1
+	if err := json.Unmarshal(data, &nMinus1); err != nil {
+		t.Fatalf("N-1 failed to unmarshal JSON from N: %v", err)
+	}
+
+	nMinus1Data, err := json.Marshal(platformStatusNMinus1{AWS: &AWSPlatformStatus{}})
+	if err != nil {
+		t.Fatalf("failed to marshal N-1 struct: %v", err)
+	}
+	var roundTripped PlatformStatus
+	if err := json.Unmarshal(nMinus1Data, &roundTripped); err != nil {
+		t.Fatalf("N failed to unmarshal JSON from N-1: %v", err)
+	}
+	if roundTripped.External != (ExternalPlatformStatus{}) {
+		t.Errorf("external should be the zero value after N-1 round-trip, got %+v", roundTripped.External)
+	}
+}

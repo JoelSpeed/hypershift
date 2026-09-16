@@ -86,3 +86,65 @@ type ExternalNodePoolPlatform struct {
 	// +required
 	MachineTemplate ExternalTemplateReference `json:"machineTemplate,omitzero"`
 }
+
+// ExternalPlatformStatus records what the integrator declared this platform to be.
+//
+// The integrator publishes the declaration on the instantiated hosted cluster object, and
+// HyperShift copies it here the first time it observes it. It is recorded rather than read
+// afresh because both values reach the guest cluster's Infrastructure, which reaches the
+// machine config server, which reaches the NodePool configuration hash: a later change
+// would roll every node in the cluster onto a configuration that disagrees with the one
+// the cluster was installed with. HyperShift therefore reports a subsequent change as a
+// degraded condition instead of acting on it.
+//
+// Nothing here is user-configurable. The corresponding spec carries only a reference to
+// the integrator's template, because a platform's identity and architecture are properties
+// of the integration rather than of an individual cluster.
+type ExternalPlatformStatus struct {
+	// name is the platform's name as declared by the integrator, for example ExampleCloud.
+	// It is propagated verbatim to the guest cluster's Infrastructure at
+	// status.platformStatus.external.platformName, which is where everything running in
+	// the cluster looks to identify the platform it is running on.
+	//
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +required
+	Name string `json:"name,omitempty"`
+
+	// cloudControllerManager declares whether the integrator runs a cloud controller
+	// manager for this platform.
+	//
+	// +required
+	CloudControllerManager ExternalCloudControllerManagerStatus `json:"cloudControllerManager,omitzero"`
+}
+
+// ExternalCloudControllerManagerStatus declares whether a cloud controller manager runs
+// for an external platform.
+type ExternalCloudControllerManagerStatus struct {
+	// state is either External or None.
+	//
+	// External means the integrator runs a cloud controller manager. Kubelets are started
+	// with --cloud-provider=external, so nodes join tainted with
+	// node.cloudprovider.kubernetes.io/uninitialized and the integrator's cloud controller
+	// manager must remove that taint. A cluster whose cloud controller manager never
+	// arrives has a healthy control plane and no schedulable nodes.
+	//
+	// None means no cloud controller manager runs. Nodes join untainted, and the
+	// integrator's machine controller is responsible for node addresses and provider IDs.
+	//
+	// +kubebuilder:validation:Enum=External;None
+	// +required
+	State ExternalCloudControllerManagerState `json:"state,omitempty"`
+}
+
+// ExternalCloudControllerManagerState describes whether a cloud controller manager runs
+// for an external platform.
+type ExternalCloudControllerManagerState string
+
+const (
+	// ExternalCloudControllerManager means the integrator runs a cloud controller manager.
+	ExternalCloudControllerManager ExternalCloudControllerManagerState = "External"
+
+	// NoCloudControllerManager means no cloud controller manager runs.
+	NoCloudControllerManager ExternalCloudControllerManagerState = "None"
+)
