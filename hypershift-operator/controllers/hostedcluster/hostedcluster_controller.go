@@ -167,6 +167,13 @@ var (
 type HostedClusterReconciler struct {
 	client.Client
 
+	// UncachedClient reads and writes directly against the API server. It is populated
+	// from the manager in SetupWithManager and is only used for object types HyperShift
+	// does not define: the manager's client caches unstructured reads, so a Get against
+	// an integrator-supplied GVK would start an informer on a CRD that may not be
+	// installed and would then retry LIST/WATCH forever.
+	UncachedClient client.Client
+
 	// ManagementClusterCapabilities can be asked for support of optional management cluster capabilities
 	ManagementClusterCapabilities capabilities.CapabiltyChecker
 
@@ -243,6 +250,13 @@ func (r *HostedClusterReconciler) SetupWithManager(mgr ctrl.Manager, createOrUpd
 	}
 	if r.now == nil {
 		r.now = metav1.Now
+	}
+	if r.UncachedClient == nil {
+		uncachedClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+		if err != nil {
+			return fmt.Errorf("failed to create uncached client: %w", err)
+		}
+		r.UncachedClient = uncachedClient
 	}
 	r.createOrUpdate = createOrUpdateWithAnnotationFactory(createOrUpdate)
 
@@ -1476,7 +1490,7 @@ func (r *HostedClusterReconciler) reconcile(ctx context.Context, req ctrl.Reques
 	}
 	// Platform is a hard prerequisite — all framework operations use the platform
 	// interface and would panic on nil. GetPlatform handles nil pullSecretBytes.
-	p, err := platform.GetPlatform(ctx, hcluster, releaseProvider, utilitiesImage, pullSecretBytes)
+	p, err := platform.GetPlatform(ctx, hcluster, releaseProvider, utilitiesImage, pullSecretBytes, platform.WithUncachedClient(r.UncachedClient))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -1570,6 +1584,18 @@ func (r *HostedClusterReconciler) reconcile(ctx context.Context, req ctrl.Reques
 		}
 		return nil
 	})
+
+	// Phase 7b: External platform progress.
+	// Runs after CoreHCPChain because it reports on the object that chain instantiates,
+	// and is non-critical because an integrator that has not finished provisioning is a
+	// normal state that must not stop the rest of the control plane from reconciling.
+	if hcluster.Spec.Platform.Type == hyperv1.ExternalPlatform {
+		report.execute("ExternalInfrastructure", nonCritical, func() error {
+			requeue, err := r.reconcileExternalInfrastructureStatus(ctx, hcluster, controlPlaneNamespace.Name)
+			report.requestRequeue(requeue)
+			return err
+		})
+	}
 
 	// Phase 8a: Components that don't depend on release image version.
 	// Evaluated before ReleaseImageVersion so they run even when the

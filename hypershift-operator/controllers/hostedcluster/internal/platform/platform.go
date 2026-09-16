@@ -91,10 +91,35 @@ type OrphanDeleter interface {
 	DeleteOrphanedMachines(ctx context.Context, c client.Client, hc *hyperv1.HostedCluster, controlPlaneNamespace string) error
 }
 
+// options carries dependencies that only some platforms need. It exists so that a
+// platform-specific requirement does not have to be threaded through every call site of
+// GetPlatform, most of which have nothing to do with the platform that needs it.
+type options struct {
+	uncachedClient client.Client
+}
+
+// Option configures GetPlatform.
+type Option func(*options)
+
+// WithUncachedClient supplies a client that bypasses the operator's cache. The External
+// platform requires one and fails without it: it reads and writes objects whose types are
+// defined by the integrator, and the operator's cached client would start an informer on
+// a CRD that may not be installed.
+func WithUncachedClient(c client.Client) Option {
+	return func(o *options) {
+		o.uncachedClient = c
+	}
+}
+
 // GetPlatform gets and initializes the cloud platform the hosted cluster was created on
 //
 //nolint:gocyclo
-func GetPlatform(ctx context.Context, hcluster *hyperv1.HostedCluster, releaseProvider releaseinfo.Provider, utilitiesImage string, pullSecretBytes []byte) (Platform, error) {
+func GetPlatform(ctx context.Context, hcluster *hyperv1.HostedCluster, releaseProvider releaseinfo.Provider, utilitiesImage string, pullSecretBytes []byte, opts ...Option) (Platform, error) {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	var (
 		platform          Platform
 		capiImageProvider string
@@ -197,7 +222,7 @@ func GetPlatform(ctx context.Context, hcluster *hyperv1.HostedCluster, releasePr
 	case hyperv1.ExternalPlatform:
 		// No payload image lookup: the Cluster API provider for an external platform is
 		// released by the integrator, not shipped in the OpenShift payload.
-		platform = &external.External{}
+		platform = external.New(o.uncachedClient)
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", hcluster.Spec.Platform.Type)
 	}

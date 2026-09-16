@@ -7,20 +7,30 @@ import (
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/external"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestGetPlatform(t *testing.T) {
 	t.Parallel()
+	uncachedClient := fake.NewClientBuilder().Build()
+
 	testCases := []struct {
 		name         string
 		platformType hyperv1.PlatformType
-		expected     Platform
+		options      []Option
+		expected     func(client.Client) Platform
 		expectError  bool
 	}{
 		{
 			name:         "When the platform is External, it should return the external platform",
 			platformType: hyperv1.ExternalPlatform,
-			expected:     &external.External{},
+			options:      []Option{WithUncachedClient(uncachedClient)},
+			// The uncached client has to reach the platform: the External platform reads
+			// integrator-defined types, and going through the operator's cache would start
+			// an informer on a CRD that may not be installed.
+			expected: func(c client.Client) Platform { return external.New(c) },
 		},
 		{
 			name:         "When the platform is unknown, it should return an error",
@@ -43,7 +53,7 @@ func TestGetPlatform(t *testing.T) {
 			// A nil pull secret keeps GetPlatform off the payload image lookup path, which
 			// needs a release provider. The External platform never takes that path at all:
 			// its Cluster API provider is released by the integrator, not in the payload.
-			platform, err := GetPlatform(t.Context(), hcluster, nil, "", nil)
+			platform, err := GetPlatform(t.Context(), hcluster, nil, "", nil, tc.options...)
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(platform).To(BeNil())
@@ -51,7 +61,7 @@ func TestGetPlatform(t *testing.T) {
 			}
 
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(platform).To(Equal(tc.expected))
+			g.Expect(platform).To(Equal(tc.expected(uncachedClient)))
 		})
 	}
 }
