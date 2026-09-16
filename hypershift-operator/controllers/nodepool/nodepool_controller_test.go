@@ -2889,6 +2889,42 @@ func TestIsArchAndPlatformSupported(t *testing.T) {
 			},
 			expect: false,
 		},
+		{
+			name: "When amd64 arch is used on External platform, it should validate successfully",
+			nodePool: &hyperv1.NodePool{
+				Spec: hyperv1.NodePoolSpec{
+					Platform: hyperv1.NodePoolPlatform{
+						Type: hyperv1.ExternalPlatform,
+					},
+					Arch: hyperv1.ArchitectureAMD64,
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "When arm64 arch is used on External platform, it should validate successfully",
+			nodePool: &hyperv1.NodePool{
+				Spec: hyperv1.NodePoolSpec{
+					Platform: hyperv1.NodePoolPlatform{
+						Type: hyperv1.ExternalPlatform,
+					},
+					Arch: hyperv1.ArchitectureARM64,
+				},
+			},
+			expect: true,
+		},
+		{
+			name: "When ppc64le arch is used on External platform, it should fail validation",
+			nodePool: &hyperv1.NodePool{
+				Spec: hyperv1.NodePoolSpec{
+					Platform: hyperv1.NodePoolPlatform{
+						Type: hyperv1.ExternalPlatform,
+					},
+					Arch: hyperv1.ArchitecturePPC64LE,
+				},
+			},
+			expect: false,
+		},
 	}
 
 	for _, tc := range testCases {

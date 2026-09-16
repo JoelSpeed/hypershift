@@ -579,6 +579,13 @@ func isArchAndPlatformSupported(nodePool *hyperv1.NodePool) bool {
 		if nodePool.Spec.Arch == hyperv1.ArchitectureAMD64 || nodePool.Spec.Arch == hyperv1.ArchitectureARM64 {
 			supported = true
 		}
+	case hyperv1.ExternalPlatform:
+		// HyperShift cannot know which architectures an external provider offers, so it
+		// permits the two the OpenShift payload ships for every platform and leaves any
+		// narrower constraint to the integrator's own machine template validation.
+		if nodePool.Spec.Arch == hyperv1.ArchitectureAMD64 || nodePool.Spec.Arch == hyperv1.ArchitectureARM64 {
+			supported = true
+		}
 	}
 
 	return supported

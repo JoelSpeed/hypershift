@@ -739,7 +739,11 @@ func (c *CAPI) reconcileMachineHealthCheck(ctx context.Context,
 	nodeStartupTimeout := 20 * time.Minute
 
 	switch nodePool.Spec.Platform.Type {
-	case hyperv1.AgentPlatform, hyperv1.NonePlatform:
+	// External joins Agent and None on the longer timeout: for all three, the time to
+	// produce a healthy node is set by infrastructure HyperShift neither owns nor can
+	// measure, so the aggressive cloud-platform default would remediate healthy machines
+	// that are simply slow to arrive.
+	case hyperv1.AgentPlatform, hyperv1.NonePlatform, hyperv1.ExternalPlatform:
 		timeOut = 16 * time.Minute
 	default:
 		timeOut = 8 * time.Minute

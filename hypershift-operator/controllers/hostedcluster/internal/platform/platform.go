@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/agent"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/aws"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/azure"
+	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/external"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/gcp"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/ibmcloud"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/kubevirt"
@@ -43,6 +44,7 @@ var (
 	_ Platform      = agent.Agent{}
 	_ Platform      = kubevirt.Kubevirt{}
 	_ Platform      = gcp.GCP{}
+	_ Platform      = external.External{}
 	_ OrphanDeleter = aws.AWS{}
 	_ OrphanDeleter = azure.Azure{}
 	_ OrphanDeleter = gcp.GCP{}
@@ -192,6 +194,10 @@ func GetPlatform(ctx context.Context, hcluster *hyperv1.HostedCluster, releasePr
 			}
 		}
 		platform = gcp.New(utilitiesImage, capiImageProvider, payloadVersion)
+	case hyperv1.ExternalPlatform:
+		// No payload image lookup: the Cluster API provider for an external platform is
+		// released by the integrator, not shipped in the OpenShift payload.
+		platform = &external.External{}
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", hcluster.Spec.Platform.Type)
 	}

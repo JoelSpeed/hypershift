@@ -3030,6 +3030,11 @@ func reconcileHostedControlPlane(hcp *hyperv1.HostedControlPlane, hcluster *hype
 	hcp.Spec.ImageContentSources = hcluster.Spec.ImageContentSources
 
 	// Pass through Platform spec.
+	//
+	// Only Agent is rewritten here. Do not add platforms to this switch without checking
+	// what the control plane side reads off the type: External in particular must survive
+	// intact, because the control plane operator resolves the integrator's objects from
+	// hcp.Spec.Platform.External and renders the guest Infrastructure from the type.
 	hcp.Spec.Platform = *hcluster.Spec.Platform.DeepCopy()
 	switch hcluster.Spec.Platform.Type {
 	case hyperv1.AgentPlatform:

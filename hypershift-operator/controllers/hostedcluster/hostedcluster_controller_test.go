@@ -581,6 +581,64 @@ func TestReconcileHostedControlPlaneLabelSync(t *testing.T) {
 	}
 }
 
+// TestReconcileHostedControlPlanePlatformPassthrough guards the platform rewrite in
+// reconcileHostedControlPlane. Agent is rewritten to None on the HostedControlPlane;
+// External must not be, because the control plane operator resolves the integrator's
+// objects from hcp.Spec.Platform.External and renders the guest Infrastructure from the
+// type. Silently collapsing it to None would produce a cluster with no platform status
+// and no way to reach the provider.
+func TestReconcileHostedControlPlanePlatformPassthrough(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name             string
+		platform         hyperv1.PlatformSpec
+		expectedHCPType  hyperv1.PlatformType
+		expectedExternal hyperv1.ExternalPlatformSpec
+	}{
+		{
+			name:            "When the platform is Agent, it should be rewritten to None on the HCP",
+			platform:        hyperv1.PlatformSpec{Type: hyperv1.AgentPlatform, Agent: &hyperv1.AgentPlatformSpec{AgentNamespace: "agents"}},
+			expectedHCPType: hyperv1.NonePlatform,
+		},
+		{
+			name: "When the platform is External, it should be passed through to the HCP unchanged",
+			platform: hyperv1.PlatformSpec{
+				Type: hyperv1.ExternalPlatform,
+				External: hyperv1.ExternalPlatformSpec{
+					HostedClusterTemplate: hyperv1.ExternalTemplateReference{
+						APIGroup: "example.io",
+						Resource: "foohostedclustertemplates",
+						Name:     "my-infra",
+					},
+				},
+			},
+			expectedHCPType: hyperv1.ExternalPlatform,
+			expectedExternal: hyperv1.ExternalPlatformSpec{
+				HostedClusterTemplate: hyperv1.ExternalTemplateReference{
+					APIGroup: "example.io",
+					Resource: "foohostedclustertemplates",
+					Name:     "my-infra",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewGomegaWithT(t)
+
+			hc := &hyperv1.HostedCluster{Spec: hyperv1.HostedClusterSpec{Platform: test.platform}}
+			hcp := &hyperv1.HostedControlPlane{}
+
+			err := reconcileHostedControlPlane(hcp, hc, false, false, func() (map[string]string, error) { return nil, nil })
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(hcp.Spec.Platform.Type).To(Equal(test.expectedHCPType))
+			g.Expect(hcp.Spec.Platform.External).To(Equal(test.expectedExternal))
+		})
+	}
+}
+
 func TestReconcileHostedControlPlaneUpgrades(t *testing.T) {
 	t.Parallel()
 	// TODO: the spec/status comparison of control plane is a weak check; the

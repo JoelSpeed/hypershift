@@ -138,6 +138,11 @@ func (o *CreateNodePoolOptions) CreateNodePool(ctx context.Context, platformOpts
 			o.NodeUpgradeType = hyperv1.UpgradeTypeReplace
 		case hyperv1.GCPPlatform:
 			o.NodeUpgradeType = hyperv1.UpgradeTypeReplace
+		case hyperv1.ExternalPlatform:
+			// Replace, because the external provider owns machine lifecycle through Cluster
+			// API and replacing a Machine is the only upgrade path it is guaranteed to
+			// support. InPlace would require the integrator to run the upgrade agent.
+			o.NodeUpgradeType = hyperv1.UpgradeTypeReplace
 		default:
 			panic("Unsupported platform")
 		}

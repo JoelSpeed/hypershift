@@ -1224,6 +1224,11 @@ func TestReconcileMachineHealthCheck(t *testing.T) {
 			mhc.Spec.Checks.NodeStartupTimeoutSeconds = &s
 		}
 	}
+	withPlatform := func(platformType hyperv1.PlatformType) func(client.Object) {
+		return func(o client.Object) {
+			o.(*hyperv1.NodePool).Spec.Platform.Type = platformType
+		}
+	}
 
 	tests := []struct {
 		name     string
@@ -1290,6 +1295,12 @@ func TestReconcileMachineHealthCheck(t *testing.T) {
 			hc:       hostedcluster(),
 			np:       nodepool(withMaxUnhealthyOverride("foo")),
 			expected: healthcheck(),
+		},
+		{
+			name:     "When the platform is External, it should use the longer timeout",
+			hc:       hostedcluster(),
+			np:       nodepool(withPlatform(hyperv1.ExternalPlatform)),
+			expected: healthcheck(withTimeout(16 * time.Minute)),
 		},
 	}
 
