@@ -47,6 +47,14 @@ const (
 	// beta: x.y.z
 	EtcdSharding featuregate.Feature = "EtcdSharding"
 
+	// ExternalPlatform enables the External platform type, in which infrastructure
+	// provisioning, machine management and cloud integration are supplied by a controller
+	// owned and released by an integrator rather than implemented inside HyperShift.
+	// owner: @JoelSpeed
+	// alpha: v0.1.80
+	// beta: x.y.z
+	ExternalPlatform featuregate.Feature = "ExternalPlatform"
+
 	// OSStreams enables dual-stream RHEL 9/10 support in NodePool boot image resolution.
 	// When enabled, NodePools resolve the RHEL stream dynamically from the release version
 	// (e.g., OCP 5.0+ defaults to rhel-10). When disabled, boot images always use rhel-9.
@@ -67,6 +75,7 @@ var (
 	karpenterOperatorFeature       = featuregates.NewFeature(KarpenterOperator, featuregates.WithEnableForFeatureSets(configv1.TechPreviewNoUpgrade))
 	etcdShardingFeature            = featuregates.NewFeature(EtcdSharding, featuregates.WithEnableForFeatureSets(configv1.TechPreviewNoUpgrade))
 	osStreamsFeature               = featuregates.NewFeature(OSStreams, featuregates.WithEnableForFeatureSets(configv1.TechPreviewNoUpgrade, configv1.Default))
+	externalPlatformFeature        = featuregates.NewFeature(ExternalPlatform, featuregates.WithEnableForFeatureSets(configv1.TechPreviewNoUpgrade))
 )
 
 func init() {
@@ -78,6 +87,7 @@ func init() {
 	allFeatures.AddFeature(karpenterOperatorFeature)
 	allFeatures.AddFeature(etcdShardingFeature)
 	allFeatures.AddFeature(osStreamsFeature)
+	allFeatures.AddFeature(externalPlatformFeature)
 
 	// Default to configuring the Default featureset
 	ConfigureFeatureSet(string(configv1.Default))

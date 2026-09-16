@@ -31,6 +31,9 @@
                         "name": "GCPPlatform"
                     },
                     {
+                        "name": "ExternalPlatform"
+                    },
+                    {
                         "name": "HCPEtcdBackup"
                     },
                     {
