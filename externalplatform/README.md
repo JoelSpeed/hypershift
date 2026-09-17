@@ -25,6 +25,7 @@ packages that talk to a cluster, `k8s.io/client-go` and `sigs.k8s.io/controller-
 | Package | What it is for |
 |---|---|
 | `contract` | The contract version, the label keys, the resource-name stripping, and typed accessors for everything HyperShift writes onto and reads back off the hosted cluster object. |
+| `component` | Publishes a `ControlPlaneComponent` for a workload the integrator runs in a control plane namespace, with the version and ownership rules that keep it from wedging the cluster. |
 
 More packages land as the implementation does; see the staging section of the enhancement.
 
