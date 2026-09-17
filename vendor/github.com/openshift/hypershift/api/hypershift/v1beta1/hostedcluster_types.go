@@ -186,6 +186,17 @@ const (
 	// of the cluster will be removed, including image registry storage, ingress dns records, load balancers, and persistent storage.
 	CleanupCloudResourcesAnnotation = "hypershift.openshift.io/cleanup-cloud-resources"
 
+	// ForceExternalCleanupAnnotation, set to "true" on a deleting External platform
+	// HostedCluster, tells HyperShift to strip the integrator's finalizers from the objects
+	// it instantiated instead of waiting for the integrator to remove them.
+	//
+	// This is the escape hatch for an integrator controller that has been uninstalled or is
+	// permanently broken, without which its finalizer makes the HostedCluster undeletable.
+	// It very likely leaks whatever the integrator provisioned, because nothing has told the
+	// provider to tear it down, so it is an explicit administrator decision rather than a
+	// timeout HyperShift takes on its own.
+	ForceExternalCleanupAnnotation = "hypershift.openshift.io/force-external-cleanup"
+
 	// ResourceRequestOverrideAnnotationPrefix is a prefix for an annotation to override resource requests for a particular deployment/container
 	// in a hosted control plane. The format of the annotation is:
 	// resource-request-override.hypershift.openshift.io/[deployment-name].[container-name]: [resource-type-1]=[value1],[resource-type-2]=[value2],...

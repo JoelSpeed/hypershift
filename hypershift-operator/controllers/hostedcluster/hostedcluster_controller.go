@@ -40,6 +40,7 @@ import (
 	cpov2 "github.com/openshift/hypershift/control-plane-operator/controllers/hostedcontrolplane/v2/controlplaneoperator"
 	"github.com/openshift/hypershift/control-plane-pki-operator/certificates"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform"
+	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/external"
 	platformaws "github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/aws"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/proxy"
 	hcmetrics "github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/metrics"
@@ -4138,6 +4139,23 @@ func (r *HostedClusterReconciler) delete(ctx context.Context, hc *hyperv1.Hosted
 		}
 		if exists {
 			log.Info("Waiting for gcpprivateserviceconnect deletion", "controlPlaneNamespace", controlPlaneNamespace)
+			return false, nil
+		}
+	}
+
+	if hc.Spec.Platform.Type == hyperv1.ExternalPlatform {
+		// Deleting the hosted cluster object is how the integrator is told to tear down,
+		// and it is sequenced here deliberately: after the Cluster API Cluster above, so
+		// machines and the Cluster API infrastructure object go first, and before the
+		// HostedControlPlane and the namespace below, which still hold the guest kubeconfig
+		// and the integrator's RoleBinding that it needs to finish.
+		force := hc.Annotations[hyperv1.ForceExternalCleanupAnnotation] == "true"
+		exists, err := external.DeleteHostedClusterObject(ctx, r.UncachedClient, hc, controlPlaneNamespace, force)
+		if err != nil {
+			return false, err
+		}
+		if exists {
+			log.Info("Waiting for the external platform provider to finish tearing down", "controlPlaneNamespace", controlPlaneNamespace)
 			return false, nil
 		}
 	}

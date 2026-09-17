@@ -374,3 +374,102 @@ func withReadyCondition(obj *unstructured.Unstructured, status metav1.ConditionS
 	}
 	return obj
 }
+
+func TestDeleteHostedClusterObject(t *testing.T) {
+	withFinalizer := func(obj *unstructured.Unstructured) *unstructured.Unstructured {
+		obj.SetFinalizers([]string{"example.io/provider"})
+		return obj
+	}
+
+	t.Run("when the object does not exist, it reports nothing to wait for", func(t *testing.T) {
+		c := newFakeClient(t)
+		exists, err := DeleteHostedClusterObject(t.Context(), c, testHostedCluster(), "clusters-example", false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if exists {
+			t.Errorf("expected the object to be reported gone")
+		}
+	})
+
+	t.Run("when the custom resource definition is not installed, it reports nothing to wait for", func(t *testing.T) {
+		// An uninstalled CRD took every object of that type with it. Erroring here would
+		// make the HostedCluster undeletable for a reason nobody can act on.
+		c := fake.NewClientBuilder().
+			WithScheme(testScheme(t)).
+			WithRESTMapper(meta.NewDefaultRESTMapper(nil)).
+			Build()
+		exists, err := DeleteHostedClusterObject(t.Context(), c, testHostedCluster(), "clusters-example", false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if exists {
+			t.Errorf("expected the object to be reported gone")
+		}
+	})
+
+	t.Run("when the object exists, it is deleted and still reported present", func(t *testing.T) {
+		c := newFakeClient(t, withFinalizer(testHostedClusterObject()))
+		exists, err := DeleteHostedClusterObject(t.Context(), c, testHostedCluster(), "clusters-example", false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !exists {
+			t.Fatalf("expected the object to be reported present while the provider tears down")
+		}
+
+		got := &unstructured.Unstructured{}
+		got.SetGroupVersionKind(hostedClusterGVK)
+		if err := c.Get(t.Context(), client.ObjectKey{Namespace: "clusters-example", Name: "example"}, got); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.GetDeletionTimestamp().IsZero() {
+			t.Errorf("expected the object to be marked for deletion")
+		}
+	})
+
+	t.Run("while the provider holds its finalizer, it keeps reporting present without forcing", func(t *testing.T) {
+		c := newFakeClient(t, withFinalizer(testHostedClusterObject()))
+		hc := testHostedCluster()
+		for range 2 {
+			exists, err := DeleteHostedClusterObject(t.Context(), c, hc, "clusters-example", false)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !exists {
+				t.Fatalf("expected the object to be reported present")
+			}
+		}
+
+		got := &unstructured.Unstructured{}
+		got.SetGroupVersionKind(hostedClusterGVK)
+		if err := c.Get(t.Context(), client.ObjectKey{Namespace: "clusters-example", Name: "example"}, got); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if diff := cmp.Diff([]string{"example.io/provider"}, got.GetFinalizers()); diff != "" {
+			t.Errorf("finalizers differ: %s", diff)
+		}
+	})
+
+	t.Run("when forced, the provider's finalizer is stripped and the object goes away", func(t *testing.T) {
+		c := newFakeClient(t, withFinalizer(testHostedClusterObject()))
+		hc := testHostedCluster()
+
+		// The first pass only issues the delete: force never skips asking the provider
+		// first, it only stops waiting for an answer.
+		if _, err := DeleteHostedClusterObject(t.Context(), c, hc, "clusters-example", true); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, err := DeleteHostedClusterObject(t.Context(), c, hc, "clusters-example", true); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exists, err := DeleteHostedClusterObject(t.Context(), c, hc, "clusters-example", true)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if exists {
+			t.Errorf("expected the object to be gone once its finalizer was stripped")
+		}
+	})
+}

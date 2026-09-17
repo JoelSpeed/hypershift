@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	capiv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -306,6 +307,68 @@ func readyCondition(hostedClusterObject *unstructured.Unstructured) (*metav1.Con
 		}, nil
 	}
 	return nil, nil
+}
+
+// DeleteHostedClusterObject deletes the hosted cluster object HyperShift instantiated and
+// reports whether it is still present. It is called on every pass of the HostedCluster
+// teardown until it reports false.
+//
+// Deleting this object is what tells the integrator to tear down. It has to happen while
+// the control plane namespace still exists, because the guest kubeconfig and the
+// integrator's RoleBinding both live there and the provider needs them to finish; deleting
+// the namespace first would strand it. It also has to happen after the Cluster API Cluster
+// is gone, so that machines and the Cluster API infrastructure object are torn down before
+// whatever they were built on.
+//
+// force strips the integrator's finalizers instead of waiting for it to remove them. That
+// almost certainly leaks provisioned infrastructure, so it happens only when an
+// administrator has asked for it on the HostedCluster, and it is logged at every step.
+func DeleteHostedClusterObject(ctx context.Context, uncachedClient client.Client, hcluster *hyperv1.HostedCluster, controlPlaneNamespace string, force bool) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	gvk, err := externalplatform.HostedClusterObjectGVK(uncachedClient.RESTMapper(), hcluster.Spec.Platform.External.HostedClusterTemplate)
+	if err != nil {
+		if meta.IsNoMatchError(err) {
+			// The integrator's custom resource definition has been uninstalled, which took
+			// every object of that type with it. There is nothing left to wait for, and
+			// erroring here would make the HostedCluster undeletable for a reason the
+			// administrator cannot act on.
+			return false, nil
+		}
+		return false, err
+	}
+
+	hostedClusterObject := &unstructured.Unstructured{}
+	hostedClusterObject.SetGroupVersionKind(gvk)
+	if err := uncachedClient.Get(ctx, client.ObjectKey{Namespace: controlPlaneNamespace, Name: hcluster.Name}, hostedClusterObject); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to get hosted cluster object %s %s/%s: %w", gvk.Kind, controlPlaneNamespace, hcluster.Name, err)
+	}
+
+	if hostedClusterObject.GetDeletionTimestamp().IsZero() {
+		if err := uncachedClient.Delete(ctx, hostedClusterObject); err != nil && !apierrors.IsNotFound(err) {
+			return false, fmt.Errorf("failed to delete hosted cluster object %s %s/%s: %w", gvk.Kind, controlPlaneNamespace, hcluster.Name, err)
+		}
+		// Report it as still present even on a successful delete: the integrator's
+		// finalizer means the object outlives the call, and the next pass re-reads it.
+		return true, nil
+	}
+
+	if force && len(hostedClusterObject.GetFinalizers()) > 0 {
+		log.Info("Force-removing the provider's finalizers from the hosted cluster object. Infrastructure the provider created is very likely to be leaked and must be cleaned up by hand",
+			"annotation", hyperv1.ForceExternalCleanupAnnotation,
+			"kind", gvk.Kind, "namespace", controlPlaneNamespace, "name", hcluster.Name,
+			"finalizers", hostedClusterObject.GetFinalizers())
+		hostedClusterObject.SetFinalizers(nil)
+		if err := uncachedClient.Update(ctx, hostedClusterObject); err != nil && !apierrors.IsNotFound(err) {
+			return false, fmt.Errorf("failed to remove finalizers from hosted cluster object %s %s/%s: %w", gvk.Kind, controlPlaneNamespace, hcluster.Name, err)
+		}
+		return true, nil
+	}
+
+	return true, nil
 }
 
 // CAPIProviderDeploymentSpec returns nil because the integrator deploys and owns its own
