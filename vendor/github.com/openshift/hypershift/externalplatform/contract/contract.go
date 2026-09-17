@@ -48,6 +48,20 @@ const (
 	instanceResourceSuffix = "s"
 )
 
+const (
+	// GuestKubeconfigSecretName is the secret HyperShift puts in every control plane
+	// namespace, and the only kubeconfig a registered integrator is granted. It reaches the
+	// guest API server over the service network, the way the control plane's own components
+	// do, so it works before and independently of the external endpoint being published or
+	// reachable.
+	//
+	// Its credentials rotate, so read it per reconcile and mount it rather than copying it.
+	GuestKubeconfigSecretName = "service-network-admin-kubeconfig"
+
+	// GuestKubeconfigSecretKey is the key the kubeconfig is stored under.
+	GuestKubeconfigSecretKey = "kubeconfig"
+)
+
 // ReadyConditionType is the single condition the contract asks the integrator to set on the
 // hosted cluster object. Its message is mirrored verbatim onto the HostedCluster, so it is
 // the integrator's user-facing error channel.

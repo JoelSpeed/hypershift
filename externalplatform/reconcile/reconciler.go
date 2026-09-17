@@ -23,19 +23,36 @@ import (
 )
 
 const (
-	// guestKubeconfigSecretName is the service network kubeconfig HyperShift puts in every
-	// control plane namespace, and the only one a registered provider is granted. It
-	// reaches the guest API server the way the control plane's own components do, so it
-	// works before, and independently of, the external endpoint being published.
-	guestKubeconfigSecretName = "service-network-admin-kubeconfig"
-	guestKubeconfigSecretKey  = "kubeconfig"
-
 	// defaultRequeue is how often provisioning is retried when the provider reports
 	// progress but no error and asks for nothing in particular. Cloud provisioning happens
 	// on the order of minutes, and HyperShift's own reconcile of the hosted cluster object
 	// polls at a comparable rate.
 	defaultRequeue = 30 * time.Second
 )
+
+// ClientOptions is the client configuration an integrator's manager must be built with.
+//
+// HyperShift grants a registered integrator a namespaced Role in each control plane namespace
+// it is entitled to, and nothing cluster-wide. A controller-runtime cache, by contrast, backs
+// every read with a cluster-wide list and watch, so a single cached Get on a Secret asks for
+// permission to read every Secret on the management cluster and fails with a Forbidden that
+// names a namespace the provider never touched.
+//
+// Disabling the cache for the two types read by key turns those into direct Gets, which the
+// namespaced grant permits. The hosted cluster objects the controller watches are unaffected:
+// they are the integrator's own types, which it does hold cluster-wide access to.
+//
+//	ctrl.NewManager(config, ctrl.Options{Client: reconcile.ClientOptions(), ...})
+func ClientOptions() client.Options {
+	return client.Options{
+		Cache: &client.CacheOptions{
+			DisableFor: []client.Object{
+				&corev1.Secret{},
+				&hyperv1.HostedControlPlane{},
+			},
+		},
+	}
+}
 
 // Reconciler drives a Provisioner through the External platform contract.
 //
@@ -282,16 +299,16 @@ func (r *Reconciler) reportOnly(ctx context.Context, original, hostedClusterObje
 // cached client would keep using the old ones until the provider restarted.
 func (r *Reconciler) guestClient(ctx context.Context, controlPlaneNamespace string) (client.Client, error) {
 	secret := &corev1.Secret{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: controlPlaneNamespace, Name: guestKubeconfigSecretName}, secret); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: controlPlaneNamespace, Name: contract.GuestKubeconfigSecretName}, secret); err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("the guest kubeconfig secret %s/%s does not exist yet", controlPlaneNamespace, guestKubeconfigSecretName)
+			return nil, fmt.Errorf("the guest kubeconfig secret %s/%s does not exist yet", controlPlaneNamespace, contract.GuestKubeconfigSecretName)
 		}
 		return nil, fmt.Errorf("failed to get the guest kubeconfig secret: %w", err)
 	}
 
-	kubeconfig, ok := secret.Data[guestKubeconfigSecretKey]
+	kubeconfig, ok := secret.Data[contract.GuestKubeconfigSecretKey]
 	if !ok {
-		return nil, fmt.Errorf("the guest kubeconfig secret %s/%s has no %q key", controlPlaneNamespace, guestKubeconfigSecretName, guestKubeconfigSecretKey)
+		return nil, fmt.Errorf("the guest kubeconfig secret %s/%s has no %q key", controlPlaneNamespace, contract.GuestKubeconfigSecretName, contract.GuestKubeconfigSecretKey)
 	}
 
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
