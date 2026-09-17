@@ -641,9 +641,9 @@ api-deps:
 .PHONY: externalplatform-deps
 externalplatform-deps:
 	cd externalplatform && \
-	  $(GO) mod tidy && \
-	  $(GO) mod verify && \
-	  $(GO) list -m -mod=readonly -json all > /dev/null
+	  $(GOUNVENDORED) mod tidy && \
+	  $(GOUNVENDORED) mod verify && \
+	  $(GOUNVENDORED) list -m -mod=readonly -json all > /dev/null
 
 .PHONY: workspace-sync
 workspace-sync:
