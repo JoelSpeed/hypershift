@@ -2,6 +2,7 @@ package assets
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	controlplaneoperatoroverrides "github.com/openshift/hypershift/hypershift-operator/controlplaneoperator-overrides"
 	"github.com/openshift/hypershift/support/config"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/rhobsmonitoring"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -17,6 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -832,6 +835,65 @@ func TestHyperShiftOperatorClusterRole_WebhookRBAC(t *testing.T) {
 			Verbs:         []string{"delete"},
 			ResourceNames: []string{hyperv1.GroupVersion.Group},
 		})))
+	})
+}
+
+// TestHyperShiftOperatorExternalPlatformProviders covers the install-time half of provider
+// registration. The operator instantiates and deletes the integrator's objects itself, and
+// Kubernetes escalation prevention means it cannot grant the per-namespace provider Role or
+// the control plane operator's Role an API group it does not hold, so the registration has
+// to reach both its ClusterRole and its arguments.
+func TestHyperShiftOperatorExternalPlatformProviders(t *testing.T) {
+	t.Parallel()
+
+	providers := externalplatform.Providers{
+		"zebra.io": {
+			APIGroup:       "zebra.io",
+			ServiceAccount: types.NamespacedName{Namespace: "zebra-system", Name: "zebra-provider"},
+		},
+		"example.io": {
+			APIGroup:       "example.io",
+			ServiceAccount: types.NamespacedName{Namespace: "example-system", Name: "example-provider"},
+		},
+	}
+
+	t.Run("When providers are registered it should grant each API group on the ClusterRole", func(t *testing.T) {
+		t.Parallel()
+		g := NewGomegaWithT(t)
+
+		clusterRole := HyperShiftOperatorClusterRole{ExternalPlatformProviders: providers}.Build()
+		for _, apiGroup := range []string{"example.io", "zebra.io"} {
+			g.Expect(clusterRole.Rules).To(ContainElement(Equal(rbacv1.PolicyRule{
+				APIGroups: []string{apiGroup},
+				Resources: []string{rbacv1.ResourceAll},
+				Verbs:     []string{rbacv1.VerbAll},
+			})), "expected the operator to hold %s", apiGroup)
+		}
+	})
+
+	t.Run("When no providers are registered it should not grant any extra API group", func(t *testing.T) {
+		t.Parallel()
+		g := NewGomegaWithT(t)
+
+		g.Expect(HyperShiftOperatorClusterRole{}.Build().Rules).To(Equal(HyperShiftOperatorClusterRole{ExternalPlatformProviders: nil}.Build().Rules))
+	})
+
+	t.Run("When providers are registered it should pass each one to the operator in a stable order", func(t *testing.T) {
+		t.Parallel()
+		g := NewGomegaWithT(t)
+
+		// Ordered by API group rather than by flag order, so re-applying the same
+		// registrations does not roll the operator pod.
+		args := HyperShiftOperatorDeployment{
+			PrivatePlatform:           string(hyperv1.NonePlatform),
+			ExternalPlatformProviders: providers,
+		}.buildArgs()
+		g.Expect(args).To(ContainElements(
+			"--external-platform-provider=example.io=example-system/example-provider",
+			"--external-platform-provider=zebra.io=zebra-system/zebra-provider",
+		))
+		g.Expect(slices.Index(args, "--external-platform-provider=example.io=example-system/example-provider")).
+			To(BeNumerically("<", slices.Index(args, "--external-platform-provider=zebra.io=zebra-system/zebra-provider")))
 	})
 }
 

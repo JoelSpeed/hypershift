@@ -39,6 +39,22 @@ func adaptRole(cpContext component.WorkloadContext, role *rbacv1.Role) error {
 		})
 	}
 
+	if cpContext.HCP.Spec.Platform.Type == hyperv1.ExternalPlatform {
+		// Read-only, and only on the integrator's own group. The control plane operator
+		// reads the hosted cluster object to learn the integrator's platform declaration,
+		// which it needs before it can render the guest Infrastructure. Everything that
+		// writes to that object is the integrator's or the HyperShift Operator's.
+		//
+		// This Role is reconciled by the HyperShift Operator, so the group also has to be on
+		// its own ClusterRole for the grant to be allowed at all. Registering the provider at
+		// install time is what puts it there.
+		role.Rules = append(role.Rules, rbacv1.PolicyRule{
+			APIGroups: []string{cpContext.HCP.Spec.Platform.External.HostedClusterTemplate.APIGroup},
+			Resources: []string{rbacv1.ResourceAll},
+			Verbs:     []string{"get", "list", "watch"},
+		})
+	}
+
 	if azureutil.IsAroHCPByHCP(cpContext.HCP) {
 		role.Rules = append(role.Rules, rbacv1.PolicyRule{
 			APIGroups: []string{"secrets-store.csi.x-k8s.io"},

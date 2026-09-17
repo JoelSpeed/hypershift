@@ -35,6 +35,7 @@ import (
 	hyperapi "github.com/openshift/hypershift/support/api"
 	capicrdmigrator "github.com/openshift/hypershift/support/capi-crdmigrator"
 	"github.com/openshift/hypershift/support/config"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/metrics"
 	"github.com/openshift/hypershift/support/rhobsmonitoring"
 
@@ -169,6 +170,7 @@ type Options struct {
 	HCPEgressBlockCIDRs                       []string
 	InstallScope                              string
 	DisableCAPIMigration                      bool
+	ExternalPlatformProviders                 []string
 }
 
 func (o *Options) Complete() error {
@@ -202,8 +204,27 @@ func (o *Options) Validate() error {
 	errs = append(errs, o.validateMonitoringConfig()...)
 	errs = append(errs, o.validateMiscConfig()...)
 	errs = append(errs, o.validateHCPEgressBlockCIDRs()...)
+	errs = append(errs, o.validateExternalPlatformProviders()...)
 
 	return errors.NewAggregate(errs)
+}
+
+// validateExternalPlatformProviders rejects a malformed registration at install time. The
+// operator parses the same values again at startup, but by then the administrator who
+// mistyped one is no longer watching.
+func (o *Options) validateExternalPlatformProviders() []error {
+	if _, err := externalplatform.ParseProviders(o.ExternalPlatformProviders); err != nil {
+		return []error{err}
+	}
+	return nil
+}
+
+// externalPlatformProviders returns the parsed registrations for the asset builders. The
+// error is dropped because Validate has already reported it; returning one here would mean
+// threading it through every builder for a case that cannot happen.
+func (o *Options) externalPlatformProviders() externalplatform.Providers {
+	providers, _ := externalplatform.ParseProviders(o.ExternalPlatformProviders)
+	return providers
 }
 
 func (o *Options) validateHCPEgressBlockCIDRs() []error {
@@ -518,6 +539,7 @@ func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().StringArrayVar(&opts.HCPEgressBlockCIDRs, "hcp-egress-block-cidrs", nil, "Static CIDRs to block in HCP namespace egress NetworkPolicies instead of dynamically-discovered hosting cluster KAS endpoint IPs. When specified, eliminates NetworkPolicy churn during hosting cluster KAS rolling restarts and avoids OVN port-group reconciliation races that can drop traffic to HCP routers. May be specified multiple times.")
 	cmd.PersistentFlags().StringVar(&opts.AWSRoleCredentialSource, "aws-role-credential-source", aws.CredentialSourceWebIdentity, "Credential source for AWS role ARN flags: 'web-identity' (uses projected SA token) or 'ec2-instance-metadata' (uses EC2 instance metadata)")
 	cmd.PersistentFlags().StringVar(&opts.AWSOperatorRolesFile, "aws-operator-roles-file", "", "Path to JSON output file from 'hypershift create operator-roles aws' (sets all three role ARN flags at once)")
+	cmd.PersistentFlags().StringArrayVar(&opts.ExternalPlatformProviders, "external-platform-provider", nil, fmt.Sprintf("An External platform integrator to admit, of the form %s. Installing an integrator's custom resource definitions is not by itself consent to let it into other tenants' control plane namespaces, so a HostedCluster naming an unregistered API group is rejected. Registering a provider grants the HyperShift Operator full access to that API group, and grants the named ServiceAccount access to the control plane namespaces of the HostedClusters that named it. May be specified multiple times.", externalplatform.ProviderFlagFormat))
 	cmd.Flags().StringVar(&opts.InstallScope, "install-scope", string(OutputAll), "Scope of installation: 'all' installs CRDs and resources (default), 'crds' installs only CRDs, 'resources' installs only resources assuming CRDs were installed previously (operator deployment and RBAC)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -1422,6 +1444,7 @@ func setupOperatorResources(opts Options, userCABundleCM *corev1.ConfigMap, trus
 		ScaleFromZeroProvider:                   opts.ScaleFromZeroProvider,
 		CAPIStorageVersion:                      capiStorageVersionForOpts(opts),
 		HCPEgressBlockCIDRs:                     opts.HCPEgressBlockCIDRs,
+		ExternalPlatformProviders:               opts.externalPlatformProviders(),
 	}.Build()
 	operatorService := assets.HyperShiftOperatorService{
 		Namespace: operatorNamespace,
@@ -1608,6 +1631,7 @@ func setupRBAC(opts Options, operatorNamespace *corev1.Namespace) (*corev1.Servi
 		RHOBSMonitoring:                         opts.RHOBSMonitoring,
 		ManagedService:                          opts.ManagedService,
 		EnableAuditLogPersistence:               opts.EnableAuditLogPersistence,
+		ExternalPlatformProviders:               opts.externalPlatformProviders(),
 	}.Build()
 	objects = append(objects, operatorClusterRole)
 

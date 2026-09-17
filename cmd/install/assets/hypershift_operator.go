@@ -17,6 +17,7 @@ import (
 	controlplaneoperatoroverrides "github.com/openshift/hypershift/hypershift-operator/controlplaneoperator-overrides"
 	capicrdmigrator "github.com/openshift/hypershift/support/capi-crdmigrator"
 	"github.com/openshift/hypershift/support/config"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/images"
 	karpenterutil "github.com/openshift/hypershift/support/karpenter"
 	"github.com/openshift/hypershift/support/metrics"
@@ -579,6 +580,7 @@ type HyperShiftOperatorDeployment struct {
 	ScaleFromZeroProvider                   string
 	CAPIStorageVersion                      string
 	HCPEgressBlockCIDRs                     []string
+	ExternalPlatformProviders               externalplatform.Providers
 }
 
 func (o HyperShiftOperatorDeployment) Build() *appsv1.Deployment {
@@ -815,6 +817,12 @@ func (o HyperShiftOperatorDeployment) buildArgs() []string {
 	}
 	for _, cidr := range o.HCPEgressBlockCIDRs {
 		args = append(args, fmt.Sprintf("--hcp-egress-block-cidrs=%s", cidr))
+	}
+	// Sorted by APIGroups(), so the rendered Deployment is stable and does not roll the
+	// operator pod every time it is re-applied with the same registrations.
+	for _, apiGroup := range o.ExternalPlatformProviders.APIGroups() {
+		provider := o.ExternalPlatformProviders[apiGroup]
+		args = append(args, fmt.Sprintf("--external-platform-provider=%s=%s/%s", provider.APIGroup, provider.ServiceAccount.Namespace, provider.ServiceAccount.Name))
 	}
 	if o.RegistryOverrides != "" {
 		args = append(args, fmt.Sprintf("--registry-overrides=%s", o.RegistryOverrides))
@@ -1266,6 +1274,7 @@ type HyperShiftOperatorClusterRole struct {
 	RHOBSMonitoring                         bool
 	ManagedService                          string
 	EnableAuditLogPersistence               bool
+	ExternalPlatformProviders               externalplatform.Providers
 }
 
 func (o HyperShiftOperatorClusterRole) Build() *rbacv1.ClusterRole {
@@ -1617,6 +1626,26 @@ func (o HyperShiftOperatorClusterRole) Build() *rbacv1.ClusterRole {
 				Verbs:     []string{"get", "list", "watch", "create", "delete"},
 			},
 		)
+	}
+
+	// One rule per registered External platform integrator. The operator needs this for two
+	// separate reasons, both of which are RBAC escalation prevention: it instantiates and
+	// deletes the integrator's own objects itself, and Kubernetes will not let it grant an
+	// API group it does not hold, so without this the per-namespace provider Role and the
+	// control plane operator's Role could not be created.
+	//
+	// Granted per registered group rather than by wildcard. An integrator's group is
+	// arbitrary, so there is no pattern to match on, and a wildcard would hand the operator
+	// every custom resource on the management cluster.
+	//
+	// APIGroups() is sorted, so re-rendering with the same registrations produces the same
+	// ClusterRole and does not churn.
+	for _, apiGroup := range o.ExternalPlatformProviders.APIGroups() {
+		role.Rules = append(role.Rules, rbacv1.PolicyRule{
+			APIGroups: []string{apiGroup},
+			Resources: []string{rbacv1.ResourceAll},
+			Verbs:     []string{rbacv1.VerbAll},
+		})
 	}
 
 	return role

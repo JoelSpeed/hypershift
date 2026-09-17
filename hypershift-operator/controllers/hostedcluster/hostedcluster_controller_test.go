@@ -39,6 +39,7 @@ import (
 	fakecapabilities "github.com/openshift/hypershift/support/capabilities/fake"
 	"github.com/openshift/hypershift/support/config"
 	controlplanecomponent "github.com/openshift/hypershift/support/controlplane-component"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/k8sutil"
 	"github.com/openshift/hypershift/support/metrics"
 	"github.com/openshift/hypershift/support/releaseinfo"
@@ -635,6 +636,85 @@ func TestReconcileHostedControlPlanePlatformPassthrough(t *testing.T) {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(hcp.Spec.Platform.Type).To(Equal(test.expectedHCPType))
 			g.Expect(hcp.Spec.Platform.External).To(Equal(test.expectedExternal))
+		})
+	}
+}
+
+// TestValidateExternalConfig covers the admission half of provider registration. Installing
+// an integrator's custom resource definitions is not by itself consent to let it into other
+// tenants' control plane namespaces, so admitting a HostedCluster is the decision that
+// grants that access and an unregistered API group has to be refused here.
+func TestValidateExternalConfig(t *testing.T) {
+	t.Parallel()
+
+	externalHostedCluster := func(apiGroup string) *hyperv1.HostedCluster {
+		return &hyperv1.HostedCluster{
+			Spec: hyperv1.HostedClusterSpec{
+				Platform: hyperv1.PlatformSpec{
+					Type: hyperv1.ExternalPlatform,
+					External: hyperv1.ExternalPlatformSpec{
+						HostedClusterTemplate: hyperv1.ExternalTemplateReference{
+							APIGroup: apiGroup,
+							Resource: "foohostedclustertemplates",
+							Name:     "my-infra",
+						},
+					},
+				},
+			},
+		}
+	}
+
+	registered := externalplatform.Providers{
+		"example.io": {
+			APIGroup:       "example.io",
+			ServiceAccount: types.NamespacedName{Namespace: "example-system", Name: "example-provider"},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		providers     externalplatform.Providers
+		hostedCluster *hyperv1.HostedCluster
+		expectedError string
+	}{
+		{
+			name:          "When the platform is not External, it should not be validated",
+			providers:     nil,
+			hostedCluster: &hyperv1.HostedCluster{Spec: hyperv1.HostedClusterSpec{Platform: hyperv1.PlatformSpec{Type: hyperv1.NonePlatform}}},
+		},
+		{
+			name:          "When the API group is registered, it should be admitted",
+			providers:     registered,
+			hostedCluster: externalHostedCluster("example.io"),
+		},
+		{
+			name:          "When the API group is not registered, it should be rejected and name the registered providers",
+			providers:     registered,
+			hostedCluster: externalHostedCluster("other.io"),
+			expectedError: `the external platform provider for API group "other.io" is not registered with the HyperShift Operator, the registered providers are example.io`,
+		},
+		{
+			// Distinguished from the case above so that an administrator who has not
+			// registered anything is told that, rather than being shown an empty list.
+			name:          "When no providers are registered at all, it should say so",
+			providers:     nil,
+			hostedCluster: externalHostedCluster("example.io"),
+			expectedError: `the external platform provider for API group "example.io" is not registered with the HyperShift Operator, and no providers are registered`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			r := &HostedClusterReconciler{ExternalPlatformProviders: test.providers}
+			err := r.validateExternalConfig(test.hostedCluster)
+			if test.expectedError == "" {
+				g.Expect(err).ToNot(HaveOccurred())
+				return
+			}
+			g.Expect(err).To(MatchError(test.expectedError))
 		})
 	}
 }

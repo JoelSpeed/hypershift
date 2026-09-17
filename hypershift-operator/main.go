@@ -60,6 +60,7 @@ import (
 	"github.com/openshift/hypershift/support/capabilities"
 	capicrdmigrator "github.com/openshift/hypershift/support/capi-crdmigrator"
 	"github.com/openshift/hypershift/support/config"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/gcpapi"
 	"github.com/openshift/hypershift/support/globalconfig"
 	"github.com/openshift/hypershift/support/metrics"
@@ -172,6 +173,7 @@ type StartOptions struct {
 	OTELSampler                            string
 	OTELSamplerArg                         string
 	OTELCorrelationAttrs                   string
+	ExternalPlatformProviders              []string
 }
 
 func NewStartCommand() *cobra.Command {
@@ -217,6 +219,7 @@ func NewStartCommand() *cobra.Command {
 	cmd.Flags().StringVar(&opts.OTELSampler, "otel-sampler", os.Getenv("OTEL_TRACES_SAMPLER"), "Trace sampler type (default: parentbased_always_on)")
 	cmd.Flags().StringVar(&opts.OTELSamplerArg, "otel-sampler-arg", os.Getenv("OTEL_TRACES_SAMPLER_ARG"), "Trace sampler argument (e.g. ratio 0.0-1.0)")
 	cmd.Flags().StringVar(&opts.OTELCorrelationAttrs, "otel-correlation-attrs", os.Getenv("OTEL_CORRELATION_ATTRS"), "Comma-separated span attribute names for cross-service correlation (e.g. cs.cluster.id). Each key is set to the cluster infraID on reconcile spans. Empty disables correlation.")
+	cmd.Flags().StringArrayVar(&opts.ExternalPlatformProviders, "external-platform-provider", nil, fmt.Sprintf("An External platform integrator to admit, of the form %s. A HostedCluster naming an API group that is not registered here is rejected, and the named ServiceAccount is granted access only to the control plane namespaces of the HostedClusters that named its API group. May be specified multiple times.", externalplatform.ProviderFlagFormat))
 
 	// Attempt to determine featureset prior to adding featuregate flags.
 	// It is safe to get the empty string from this as the empty string is the default featureset.
@@ -590,6 +593,14 @@ func setupHostedClusterController(ctx context.Context, mgr ctrl.Manager, opts *S
 		return fmt.Errorf("could not load cert rotation scale: %w", err)
 	}
 
+	// Parsed here rather than in the flag so that a malformed registration fails the
+	// operator at startup, where the administrator who wrote it is looking, rather than
+	// on the first External HostedCluster that happens to be admitted.
+	externalPlatformProviders, err := externalplatform.ParseProviders(opts.ExternalPlatformProviders)
+	if err != nil {
+		return err
+	}
+
 	hostedClusterReconciler := &hostedcluster.HostedClusterReconciler{
 		Client:                                  mgr.GetClient(),
 		ManagementClusterCapabilities:           mgmtClusterCaps,
@@ -610,6 +621,7 @@ func setupHostedClusterController(ctx context.Context, mgr ctrl.Manager, opts *S
 		FeatureSet:                              featuregate.FeatureSet(),
 		OpenShiftTrustedCAFilePath:              "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
 		HCPEgressBlockCIDRs:                     opts.HCPEgressBlockCIDRs,
+		ExternalPlatformProviders:               externalPlatformProviders,
 	}
 	if opts.OIDCStorageProviderS3BucketName != "" {
 		awsSession := awsutil.NewSession(ctx, "hypershift-operator-oidc-bucket", opts.OIDCStorageProviderS3Credentials, "", "", opts.OIDCStorageProviderS3Region)

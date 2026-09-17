@@ -40,8 +40,8 @@ import (
 	cpov2 "github.com/openshift/hypershift/control-plane-operator/controllers/hostedcontrolplane/v2/controlplaneoperator"
 	"github.com/openshift/hypershift/control-plane-pki-operator/certificates"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform"
-	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/external"
 	platformaws "github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/aws"
+	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/platform/external"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/internal/proxy"
 	hcmetrics "github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/metrics"
 	"github.com/openshift/hypershift/hypershift-operator/controllers/hostedcluster/validations"
@@ -60,6 +60,7 @@ import (
 	"github.com/openshift/hypershift/support/certs"
 	"github.com/openshift/hypershift/support/config"
 	controlplanecomponent "github.com/openshift/hypershift/support/controlplane-component"
+	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/gcpapi"
 	"github.com/openshift/hypershift/support/globalconfig"
 	"github.com/openshift/hypershift/support/infraid"
@@ -174,6 +175,12 @@ type HostedClusterReconciler struct {
 	// an integrator-supplied GVK would start an informer on a CRD that may not be
 	// installed and would then retry LIST/WATCH forever.
 	UncachedClient client.Client
+
+	// ExternalPlatformProviders are the External platform integrators a cluster
+	// administrator registered at install time, keyed by API group. A HostedCluster naming
+	// an unregistered group is rejected, because admitting it is what causes HyperShift to
+	// grant that integrator access to the control plane namespace.
+	ExternalPlatformProviders externalplatform.Providers
 
 	// ManagementClusterCapabilities can be asked for support of optional management cluster capabilities
 	ManagementClusterCapabilities capabilities.CapabiltyChecker
@@ -1506,6 +1513,21 @@ func (r *HostedClusterReconciler) reconcile(ctx context.Context, req ctrl.Reques
 	// These must succeed for downstream component deployments to function.
 	report.execute("PlatformCredentials", critical, func() error {
 		return r.reconcilePlatformCredentialsWithStatus(ctx, hcluster, createOrUpdate, controlPlaneNamespace.Name, p)
+	})
+
+	// Critical, and sequenced with the credentials above rather than later: without it the
+	// integrator cannot see the namespace at all, so nothing downstream of it can make
+	// progress. validateExternalConfig has already rejected an unregistered API group, so
+	// the lookup here can only miss if the platform is not External.
+	report.execute("ExternalPlatformProviderRBAC", critical, func() error {
+		if hcluster.Spec.Platform.Type != hyperv1.ExternalPlatform {
+			return nil
+		}
+		provider, registered := r.ExternalPlatformProviders[hcluster.Spec.Platform.External.HostedClusterTemplate.APIGroup]
+		if !registered {
+			return nil
+		}
+		return external.ReconcileProviderRBAC(ctx, r.Client, createOrUpdate, hcluster, controlPlaneNamespace.Name, provider)
 	})
 
 	report.execute("PullSecretSync", critical, func() error {
@@ -4461,6 +4483,10 @@ func (r *HostedClusterReconciler) validateConfigAndClusterCapabilities(ctx conte
 		errs = append(errs, err)
 	}
 
+	if err := r.validateExternalConfig(hc); err != nil {
+		errs = append(errs, err)
+	}
+
 	if err := validateClusterID(hc); err != nil {
 		errs = append(errs, err)
 	}
@@ -4800,6 +4826,31 @@ func (r *HostedClusterReconciler) validateAgentConfig(ctx context.Context, hc *h
 
 	if err := r.Get(ctx, client.ObjectKeyFromObject(agentNamespace), agentNamespace); err != nil {
 		return fmt.Errorf("failed to get agent namespace: %w", err)
+	}
+
+	return nil
+}
+
+// validateExternalConfig rejects a HostedCluster that names an integrator no administrator
+// of this management cluster has registered.
+//
+// Installing a partner's custom resource definitions is not by itself consent to let that
+// partner into other tenants' control plane namespaces, and admitting the HostedCluster is
+// what causes HyperShift to mint that access. Rejecting it here, on
+// ValidHostedClusterConfiguration, tells whoever wrote it what to ask their administrator
+// for, rather than leaving the cluster to hang with no infrastructure and no explanation.
+func (r *HostedClusterReconciler) validateExternalConfig(hc *hyperv1.HostedCluster) error {
+	if hc.Spec.Platform.Type != hyperv1.ExternalPlatform {
+		return nil
+	}
+
+	apiGroup := hc.Spec.Platform.External.HostedClusterTemplate.APIGroup
+	if _, registered := r.ExternalPlatformProviders[apiGroup]; !registered {
+		registeredGroups := r.ExternalPlatformProviders.APIGroups()
+		if len(registeredGroups) == 0 {
+			return fmt.Errorf("the external platform provider for API group %q is not registered with the HyperShift Operator, and no providers are registered", apiGroup)
+		}
+		return fmt.Errorf("the external platform provider for API group %q is not registered with the HyperShift Operator, the registered providers are %s", apiGroup, strings.Join(registeredGroups, ", "))
 	}
 
 	return nil
