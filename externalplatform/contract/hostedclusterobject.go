@@ -2,6 +2,7 @@ package contract
 
 import (
 	"fmt"
+	"time"
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 
@@ -245,12 +246,24 @@ func Ready(hostedClusterObject *unstructured.Unstructured) (*metav1.Condition, e
 		status, _, _ := unstructured.NestedString(entry, "status")
 		reason, _, _ := unstructured.NestedString(entry, "reason")
 		message, _, _ := unstructured.NestedString(entry, "message")
-		return &metav1.Condition{
+		condition := &metav1.Condition{
 			Type:    conditionType,
 			Status:  metav1.ConditionStatus(status),
 			Reason:  reason,
 			Message: message,
-		}, nil
+		}
+		// Returned rather than dropped because it is how long the provider has been in this
+		// state, which is the thing an operator staring at a stuck cluster wants to know, and
+		// because the conformance suite uses it to prove the provider is not rewriting it on
+		// every reconcile.
+		if raw, found, _ := unstructured.NestedString(entry, "lastTransitionTime"); found && raw != "" {
+			parsed, err := time.Parse(time.RFC3339, raw)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse the Ready condition's lastTransitionTime %q: %w", raw, err)
+			}
+			condition.LastTransitionTime = metav1.NewTime(parsed)
+		}
+		return condition, nil
 	}
 	return nil, nil
 }

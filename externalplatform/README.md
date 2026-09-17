@@ -27,6 +27,7 @@ packages that talk to a cluster, `k8s.io/client-go` and `sigs.k8s.io/controller-
 | `contract` | The contract version, the label keys, the resource-name stripping, and typed accessors for everything HyperShift writes onto and reads back off the hosted cluster object. |
 | `component` | Publishes a `ControlPlaneComponent` for a workload the integrator runs in a control plane namespace, with the version and ownership rules that keep it from wedging the cluster. |
 | `reconcile` | A controller-runtime reconciler that drives a two-method `Provisioner`, so the finalizer, declaration and teardown ordering the contract requires is not the integrator's to get wrong. |
+| `conformance` | The suite to run in your own CI. It plays HyperShift's half of the contract against an API server with your controller and your CRDs, and asserts the ordering rules that otherwise fail silently. |
 
 More packages land as the implementation does; see the staging section of the enhancement.
 
