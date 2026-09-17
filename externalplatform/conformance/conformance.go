@@ -39,6 +39,7 @@ import (
 	"github.com/openshift/hypershift/externalplatform/contract"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -117,6 +118,12 @@ type Suite struct {
 func New(opts Options) (*Suite, error) {
 	if opts.Client == nil {
 		return nil, fmt.Errorf("a Client is required")
+	}
+	// Checked here rather than left to fail inside a check, because the failure it produces
+	// there is "no kind is registered for the type v1.CustomResourceDefinition", which reads
+	// like a bug in the suite rather than a line missing from the caller's scheme.
+	if !opts.Client.Scheme().Recognizes(apiextensionsv1.SchemeGroupVersion.WithKind("CustomResourceDefinition")) {
+		return nil, fmt.Errorf("the Client's scheme must include k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1: the suite reads your custom resource definitions to check the contract version label and the status subresource")
 	}
 	if opts.APIGroup == "" {
 		return nil, fmt.Errorf("an APIGroup is required")
@@ -214,15 +221,34 @@ func DefaultHostedControlPlane(namespace, name string) *hyperv1.HostedControlPla
 			IssuerURL:    "https://kubernetes.default.svc",
 			InfraID:      name,
 			DNS:          hyperv1.DNSSpec{BaseDomain: "conformance.hypershift.local"},
-			Etcd:         hyperv1.EtcdSpec{ManagementType: hyperv1.Managed},
-			Platform:     hyperv1.PlatformSpec{Type: hyperv1.ExternalPlatform},
-			Services: []hyperv1.ServicePublishingStrategyMapping{
-				{
-					Service: hyperv1.APIServer,
-					ServicePublishingStrategy: hyperv1.ServicePublishingStrategy{
-						Type: hyperv1.LoadBalancer,
+			Etcd: hyperv1.EtcdSpec{
+				ManagementType: hyperv1.Managed,
+				// Required alongside Managed, and rejected alongside Unmanaged.
+				Managed: &hyperv1.ManagedEtcdSpec{
+					Storage: hyperv1.ManagedEtcdStorageSpec{
+						Type: hyperv1.PersistentVolumeEtcdStorage,
 					},
 				},
+			},
+			Platform: hyperv1.PlatformSpec{
+				Type: hyperv1.ExternalPlatform,
+				// The union discriminator's member. Nothing in the suite reads it, but the
+				// API rejects a HostedControlPlane without it.
+				External: hyperv1.ExternalPlatformSpec{
+					HostedClusterTemplate: hyperv1.ExternalTemplateReference{
+						APIGroup: "conformance.hypershift.openshift.io",
+						Resource: "conformancehostedclustertemplates",
+						Name:     name,
+					},
+				},
+			},
+			// Four is the API's minimum. They are never reconciled here; nothing in the
+			// suite starts a control plane.
+			Services: []hyperv1.ServicePublishingStrategyMapping{
+				{Service: hyperv1.APIServer, ServicePublishingStrategy: hyperv1.ServicePublishingStrategy{Type: hyperv1.LoadBalancer}},
+				{Service: hyperv1.OAuthServer, ServicePublishingStrategy: hyperv1.ServicePublishingStrategy{Type: hyperv1.Route}},
+				{Service: hyperv1.Konnectivity, ServicePublishingStrategy: hyperv1.ServicePublishingStrategy{Type: hyperv1.Route}},
+				{Service: hyperv1.Ignition, ServicePublishingStrategy: hyperv1.ServicePublishingStrategy{Type: hyperv1.Route}},
 			},
 		},
 	}

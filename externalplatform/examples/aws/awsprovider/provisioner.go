@@ -28,9 +28,12 @@ import (
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,6 +74,32 @@ var HostedClusterObjectGVK = schema.GroupVersionKind{
 	Group:   APIGroup,
 	Version: Version,
 	Kind:    "AWSHostedCluster",
+}
+
+// AddToScheme registers everything this integration reads or writes.
+//
+// Both the integration's own type and Cluster API Provider AWS's are registered as
+// unstructured, so that this binary vendors neither API. That is a choice about dependencies
+// rather than about correctness: the client treats a registered unstructured type exactly as
+// it treats a typed one.
+func AddToScheme(scheme *runtime.Scheme) error {
+	for _, add := range []func(*runtime.Scheme) error{
+		corev1.AddToScheme,
+		appsv1.AddToScheme,
+		// HostedControlPlane and ControlPlaneComponent, the only two HyperShift types an
+		// integrator touches.
+		hyperv1.AddToScheme,
+	} {
+		if err := add(scheme); err != nil {
+			return fmt.Errorf("failed to build the scheme: %w", err)
+		}
+	}
+	for _, gvk := range []schema.GroupVersionKind{HostedClusterObjectGVK, capaAWSClusterGVK} {
+		scheme.AddKnownTypeWithName(gvk, &unstructured.Unstructured{})
+		scheme.AddKnownTypeWithName(gvk.GroupVersion().WithKind(gvk.Kind+"List"), &unstructured.UnstructuredList{})
+		metav1.AddToGroupVersion(scheme, gvk.GroupVersion())
+	}
+	return nil
 }
 
 // Provisioner implements the External platform contract for AWS.

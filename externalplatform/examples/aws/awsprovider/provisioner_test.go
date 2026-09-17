@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -30,19 +29,8 @@ const (
 func testScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
 	scheme := runtime.NewScheme()
-	for _, add := range []func(*runtime.Scheme) error{
-		corev1.AddToScheme,
-		appsv1.AddToScheme,
-		hyperv1.AddToScheme,
-	} {
-		if err := add(scheme); err != nil {
-			t.Fatalf("unexpected error building the scheme: %v", err)
-		}
-	}
-	for _, gvk := range []schema.GroupVersionKind{HostedClusterObjectGVK, capaAWSClusterGVK} {
-		scheme.AddKnownTypeWithName(gvk, &unstructured.Unstructured{})
-		scheme.AddKnownTypeWithName(gvk.GroupVersion().WithKind(gvk.Kind+"List"), &unstructured.UnstructuredList{})
-		metav1.AddToGroupVersion(scheme, gvk.GroupVersion())
+	if err := AddToScheme(scheme); err != nil {
+		t.Fatalf("unexpected error building the scheme: %v", err)
 	}
 	return scheme
 }

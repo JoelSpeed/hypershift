@@ -18,14 +18,7 @@ import (
 	"github.com/openshift/hypershift/externalplatform/examples/aws/awsprovider"
 	"github.com/openshift/hypershift/externalplatform/reconcile"
 
-	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -55,26 +48,8 @@ func main() {
 
 func run(cloudControllerManagerImage, metricsAddress string, leaderElection bool) error {
 	scheme := runtime.NewScheme()
-	for _, add := range []func(*runtime.Scheme) error{
-		corev1.AddToScheme,
-		appsv1.AddToScheme,
-		// For HostedControlPlane and ControlPlaneComponent, which are the only two HyperShift
-		// types an integrator touches.
-		hyperv1.AddToScheme,
-	} {
-		if err := add(scheme); err != nil {
-			return fmt.Errorf("failed to build the scheme: %w", err)
-		}
-	}
-	// The integration's own type and Cluster API Provider AWS's, both handled as unstructured
-	// so that this binary does not vendor either API.
-	for _, gvk := range []schema.GroupVersionKind{
-		awsprovider.HostedClusterObjectGVK,
-		{Group: "infrastructure.cluster.x-k8s.io", Version: "v1beta2", Kind: "AWSCluster"},
-	} {
-		scheme.AddKnownTypeWithName(gvk, &unstructured.Unstructured{})
-		scheme.AddKnownTypeWithName(gvk.GroupVersion().WithKind(gvk.Kind+"List"), &unstructured.UnstructuredList{})
-		metav1.AddToGroupVersion(scheme, gvk.GroupVersion())
+	if err := awsprovider.AddToScheme(scheme); err != nil {
+		return err
 	}
 
 	manager, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{

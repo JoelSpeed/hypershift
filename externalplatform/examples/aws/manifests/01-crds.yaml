@@ -121,10 +121,24 @@ spec:
           type: object
           properties:
             spec:
-              # Instantiated verbatim from the template's spec.template.spec above.
+              # Instantiated verbatim from the template's spec.template.spec above, plus
+              # controlPlaneEndpoint.
               type: object
               required: [region, vpcID, subnetIDs]
               properties:
+                controlPlaneEndpoint:
+                  description: |-
+                    Written by HyperShift rather than copied from the template, and the one
+                    part of the spec it keeps reconciling. A structural schema prunes fields
+                    it does not declare, so omitting this silently drops the endpoint and the
+                    provider has nowhere to point the cluster's nodes.
+                  type: object
+                  properties:
+                    host:
+                      type: string
+                    port:
+                      type: integer
+                      format: int32
                 region:
                   description: region is the AWS region to build the cluster in.
                   type: string
@@ -173,8 +187,11 @@ spec:
                     name:
                       type: string
                     cloudControllerManager:
-                      type: string
-                      enum: [External, None]
+                      type: object
+                      properties:
+                        state:
+                          type: string
+                          enum: [External, None]
                 infrastructure:
                   description: |-
                     The Cluster API infrastructure object the provider stood up. HyperShift
