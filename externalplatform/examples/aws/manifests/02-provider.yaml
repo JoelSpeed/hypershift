@@ -1,0 +1,130 @@
+# The provider: one Deployment per management cluster, serving every External HostedCluster
+# that names this integration's API group.
+#
+# Note how little is here. Almost everything the provider needs is granted to it per control
+# plane namespace by HyperShift, at the moment a HostedCluster names this API group, and only
+# in that namespace. That is the isolation boundary, and it only works because HyperShift
+# mints those bindings rather than the integrator creating them. Register this ServiceAccount
+# with:
+#
+#   hypershift install \
+#     --external-platform-provider=aws.example.hypershift.openshift.io=example-aws-external-platform/example-aws-external-platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-aws-external-platform
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: example-aws-external-platform
+  name: example-aws-external-platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: example-aws-external-platform
+rules:
+  # The integration's own API, cluster-wide, because a controller-runtime cache watches
+  # cluster-wide and the objects live in control plane namespaces that do not exist yet. This
+  # is not a cross-tenant grant: it is this integrator's own group, which it defines and owns.
+  - apiGroups: ["aws.example.hypershift.openshift.io"]
+    resources: ["*"]
+    verbs: ["*"]
+  # Cluster API Provider AWS's AWSCluster, which this integration reuses rather than inventing
+  # a second infrastructure type. The trade-off is that this group is shared: an integrator
+  # that needs its infrastructure objects isolated from other tenants should define its own
+  # infrastructure type in its own API group instead.
+  - apiGroups: ["infrastructure.cluster.x-k8s.io"]
+    resources: ["awsclusters", "awsclusters/status"]
+    verbs: ["*"]
+  # Everything else the provider touches per HostedCluster, including the HostedControlPlane,
+  # the guest kubeconfig, ControlPlaneComponents and the cloud controller manager Deployment,
+  # comes from the namespaced Role HyperShift mints. Nothing for them belongs here.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: example-aws-external-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: example-aws-external-platform
+subjects:
+  - kind: ServiceAccount
+    namespace: example-aws-external-platform
+    name: example-aws-external-platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: example-aws-external-platform
+  name: example-aws-external-platform
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: example-aws-external-platform
+  name: example-aws-external-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: example-aws-external-platform
+subjects:
+  - kind: ServiceAccount
+    namespace: example-aws-external-platform
+    name: example-aws-external-platform
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: example-aws-external-platform
+  name: example-aws-external-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-aws-external-platform
+  template:
+    metadata:
+      labels:
+        app: example-aws-external-platform
+    spec:
+      serviceAccountName: example-aws-external-platform
+      containers:
+        - name: manager
+          image: quay.io/example/aws-external-platform:latest
+          args:
+            # Required in practice. This integration declares an external cloud controller
+            # manager, so without one no node in any hosted cluster it serves becomes
+            # schedulable.
+            - --cloud-controller-manager-image=registry.k8s.io/provider-aws/cloud-controller-manager:v1.32.0
+            - --leader-elect=true
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: metrics
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault

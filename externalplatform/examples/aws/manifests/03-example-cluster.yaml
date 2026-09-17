@@ -1,0 +1,116 @@
+# A worked example of the two objects a user writes.
+#
+# Replace the AWS identifiers and the pull secret, then apply. Equivalent to:
+#
+#   hypershift create cluster external --name example \
+#     --hosted-cluster-template-api-group aws.example.hypershift.openshift.io \
+#     --hosted-cluster-template-resource awshostedclustertemplates \
+#     --hosted-cluster-template-name example \
+#     --machine-template-api-group infrastructure.cluster.x-k8s.io \
+#     --machine-template-resource awsmachinetemplates \
+#     --machine-template-name example
+---
+apiVersion: aws.example.hypershift.openshift.io/v1alpha1
+kind: AWSHostedClusterTemplate
+metadata:
+  namespace: clusters
+  name: example
+spec:
+  template:
+    spec:
+      region: eu-west-1
+      vpcID: vpc-0123456789abcdef0
+      subnetIDs:
+        - subnet-0123456789abcdef0
+        - subnet-0123456789abcdef1
+        - subnet-0123456789abcdef2
+      tags:
+        owner: platform-team
+---
+# The NodePool's machine template is a real Cluster API object, unlike the template above:
+# the MachineDeployment resolves it directly. This integration does not define one, it uses
+# Cluster API Provider AWS's.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  namespace: clusters
+  name: example
+spec:
+  template:
+    spec:
+      instanceType: m5.xlarge
+      iamInstanceProfile: example-worker-profile
+      subnet:
+        id: subnet-0123456789abcdef0
+      # Editing anything in this spec rolls the NodePool, which is the supported way to
+      # change instance shape or image. The configuration hash is computed over the resolved
+      # spec, so a provider that wrote observed values back into it would roll nodes
+      # continuously.
+---
+apiVersion: hypershift.openshift.io/v1beta1
+kind: HostedCluster
+metadata:
+  namespace: clusters
+  name: example
+spec:
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.21.0-x86_64
+  pullSecret:
+    name: example-pull-secret
+  sshKey:
+    name: example-ssh-key
+  infraID: example
+  dns:
+    baseDomain: example.com
+  networking:
+    clusterNetwork:
+      - cidr: 10.132.0.0/14
+    serviceNetwork:
+      - cidr: 172.31.0.0/16
+    networkType: OVNKubernetes
+  services:
+    - service: APIServer
+      servicePublishingStrategy:
+        type: LoadBalancer
+    - service: OAuthServer
+      servicePublishingStrategy:
+        type: Route
+    - service: Konnectivity
+      servicePublishingStrategy:
+        type: Route
+    - service: Ignition
+      servicePublishingStrategy:
+        type: Route
+  platform:
+    type: External
+    external:
+      # Everything else about the platform, including its name and whether it runs a cloud
+      # controller manager, is declared by the provider rather than configured here. The API
+      # surface is one reference.
+      hostedClusterTemplate:
+        apiGroup: aws.example.hypershift.openshift.io
+        resource: awshostedclustertemplates
+        name: example
+---
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  namespace: clusters
+  name: example-workers
+spec:
+  clusterName: example
+  replicas: 3
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.21.0-x86_64
+  management:
+    # External NodePools are Replace-only: an in-place upgrade would need HyperShift to know
+    # how to reach the machines, which is exactly the knowledge an external platform does not
+    # give it.
+    upgradeType: Replace
+  platform:
+    type: External
+    external:
+      machineTemplate:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        resource: awsmachinetemplates
+        name: example

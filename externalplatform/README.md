@@ -31,6 +31,13 @@ packages that talk to a cluster, `k8s.io/client-go` and `sigs.k8s.io/controller-
 
 More packages land as the implementation does; see the staging section of the enhancement.
 
+## Examples
+
+[`examples/aws`](examples/aws) is a complete, working integration for AWS: an API, a
+provisioner, a cloud controller manager, RBAC and manifests. It is about four hundred lines
+of Go, and it is the thing to read before writing your own.
+
+
 ## Versioning
 
 `v0.x` while the `ExternalPlatform` feature gate is TechPreview, `v1.0.0` at GA, semver

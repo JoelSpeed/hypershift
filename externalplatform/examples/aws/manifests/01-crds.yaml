@@ -1,0 +1,215 @@
+# The integrator's own API.
+#
+# Two types, and the relationship between their names is the contract: HyperShift takes the
+# template resource a HostedCluster names, strips the "templates" suffix to get the instance
+# resource, and instantiates the instance in the control plane namespace. Rename either one
+# and HyperShift will not find the other.
+#
+# The two spec schemas are written out twice rather than shared, because a structural schema
+# may not use $ref and a YAML anchor does not cross a document boundary. They have to agree:
+# HyperShift copies the template's spec.template.spec into the instance's spec verbatim.
+#
+# Neither type is a Cluster API type. The Cluster API infrastructure object for this
+# integration is Cluster API Provider AWS's own AWSCluster, which the provider creates.
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: awshostedclustertemplates.aws.example.hypershift.openshift.io
+  labels:
+    # Required. HyperShift reads this to detect version skew between itself and the
+    # integrator before the skew turns into silent misbehaviour. Without it, a HostedCluster
+    # referencing this template is rejected.
+    hypershift.openshift.io/external-platform-contract: v1alpha1
+spec:
+  group: aws.example.hypershift.openshift.io
+  scope: Namespaced
+  names:
+    kind: AWSHostedClusterTemplate
+    listKind: AWSHostedClusterTemplateList
+    singular: awshostedclustertemplate
+    plural: awshostedclustertemplates
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [template]
+              properties:
+                template:
+                  type: object
+                  required: [spec]
+                  properties:
+                    spec:
+                      description: |-
+                        Where in AWS to build the cluster. Bring-your-own network only: this
+                        example does not create VPCs, because an example that did would need
+                        real credentials and a real account to be worth reading.
+                      type: object
+                      required: [region, vpcID, subnetIDs]
+                      properties:
+                        region:
+                          description: region is the AWS region to build the cluster in.
+                          type: string
+                          minLength: 1
+                          maxLength: 63
+                        vpcID:
+                          description: vpcID is an existing VPC to place the cluster's nodes in.
+                          type: string
+                          pattern: "^vpc-[0-9a-f]{8,17}$"
+                        subnetIDs:
+                          description: |-
+                            subnetIDs are the subnets nodes may be placed in. One per
+                            availability zone the cluster should span.
+                          type: array
+                          minItems: 1
+                          maxItems: 10
+                          items:
+                            type: string
+                            pattern: "^subnet-[0-9a-f]{8,17}$"
+                        securityGroupID:
+                          description: |-
+                            securityGroupID is an existing security group to attach to nodes.
+                            Cluster API Provider AWS creates one if this is empty.
+                          type: string
+                          pattern: "^sg-[0-9a-f]{8,17}$"
+                        tags:
+                          description: |-
+                            tags are applied to every AWS resource created for the cluster.
+                          type: object
+                          maxProperties: 25
+                          additionalProperties:
+                            type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: awshostedclusters.aws.example.hypershift.openshift.io
+spec:
+  group: aws.example.hypershift.openshift.io
+  scope: Namespaced
+  names:
+    kind: AWSHostedCluster
+    listKind: AWSHostedClusterList
+    singular: awshostedcluster
+    plural: awshostedclusters
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      # Required. HyperShift and the provider both write to status, and without the
+      # subresource every status write would also have to round-trip the spec.
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: Region
+          type: string
+          jsonPath: .spec.region
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              # Instantiated verbatim from the template's spec.template.spec above.
+              type: object
+              required: [region, vpcID, subnetIDs]
+              properties:
+                region:
+                  description: region is the AWS region to build the cluster in.
+                  type: string
+                  minLength: 1
+                  maxLength: 63
+                vpcID:
+                  description: vpcID is an existing VPC to place the cluster's nodes in.
+                  type: string
+                  pattern: "^vpc-[0-9a-f]{8,17}$"
+                subnetIDs:
+                  description: |-
+                    subnetIDs are the subnets nodes may be placed in. One per availability
+                    zone the cluster should span.
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  items:
+                    type: string
+                    pattern: "^subnet-[0-9a-f]{8,17}$"
+                securityGroupID:
+                  description: |-
+                    securityGroupID is an existing security group to attach to nodes. Cluster
+                    API Provider AWS creates one if this is empty.
+                  type: string
+                  pattern: "^sg-[0-9a-f]{8,17}$"
+                tags:
+                  description: tags are applied to every AWS resource created for the cluster.
+                  type: object
+                  maxProperties: 25
+                  additionalProperties:
+                    type: string
+            status:
+              description: |-
+                Written by the provider, read by HyperShift. Every field here is part of the
+                External platform contract rather than of this integration, so this block is
+                the one an integrator copies unchanged.
+              type: object
+              properties:
+                platform:
+                  description: |-
+                    The integration's one-time declaration of what platform this is and
+                    whether it runs a cloud controller manager. HyperShift blocks node
+                    bootstrap until it is present, and ignores changes once observed.
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    cloudControllerManager:
+                      type: string
+                      enum: [External, None]
+                infrastructure:
+                  description: |-
+                    The Cluster API infrastructure object the provider stood up. HyperShift
+                    points the Cluster API Cluster's spec.infrastructureRef at it, and that
+                    field is immutable, so this one is in practice immutable too.
+                  type: object
+                  properties:
+                    apiGroup:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                conditions:
+                  description: |-
+                    Ready is the only condition the contract asks for. Its message is mirrored
+                    verbatim onto the HostedCluster.
+                  type: array
+                  items:
+                    type: object
+                    required: [type, status, lastTransitionTime, reason]
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum: ["True", "False", "Unknown"]
+                      observedGeneration:
+                        type: integer
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                  x-kubernetes-list-type: map
+                  x-kubernetes-list-map-keys: [type]
