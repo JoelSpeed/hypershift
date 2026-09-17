@@ -25,6 +25,7 @@ import (
 	"time"
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
+	"github.com/openshift/hypershift/externalplatform/contract"
 	"github.com/openshift/hypershift/support/externalplatform"
 	"github.com/openshift/hypershift/support/upsert"
 
@@ -43,15 +44,14 @@ import (
 
 const (
 	// ExternalPlatformGroupLabel records, on the instantiated hosted cluster object, the
-	// API group of the integrator that owns it. The group rather than the platform name
-	// because the name is only known once the integrator has reported it, and this label
-	// has to be set at create time.
-	ExternalPlatformGroupLabel = "hypershift.openshift.io/external-platform-group"
+	// API group of the integrator that owns it. Aliased from the contract module so that
+	// the key an integrator matches on and the key HyperShift writes are the same string.
+	ExternalPlatformGroupLabel = contract.PlatformGroupLabel
 
 	// readyConditionType is the single condition the contract asks the integrator to set
 	// on the hosted cluster object. Its message is mirrored verbatim onto the
 	// HostedCluster, so it is the integrator's user-facing error channel.
-	readyConditionType = "Ready"
+	readyConditionType = contract.ReadyConditionType
 
 	// externalProviderWarningThreshold is how long HyperShift waits before the condition
 	// message starts naming the elapsed time. An integrator controller that was never

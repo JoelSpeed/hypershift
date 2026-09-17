@@ -71,6 +71,7 @@ require (
 	github.com/openshift/cluster-node-tuning-operator v0.0.0-20260701110644-508d51a6f2bd
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87
 	github.com/openshift/hypershift/api v0.0.0-20260224085943-34e30acde920
+	github.com/openshift/hypershift/externalplatform v0.0.0-00010101000000-000000000000
 	github.com/openshift/library-go v0.0.0-20260716164659-7926d144f96a
 	github.com/openshift/multi-operator-manager v0.0.0-20260112172834-b64ebc8c627b
 	github.com/operator-framework/api v0.45.0
@@ -307,6 +308,8 @@ require (
 )
 
 replace github.com/openshift/hypershift/api => ./api
+
+replace github.com/openshift/hypershift/externalplatform => ./externalplatform
 
 // Use our openshift version of karpenter instead of upstream
 replace github.com/aws/karpenter-provider-aws => github.com/openshift/aws-karpenter-provider-aws v0.0.0-20260722223016-abcf7d1e3417

@@ -90,7 +90,7 @@ pre-commit: all verify test
 build: hypershift-operator control-plane-operator control-plane-pki-operator karpenter-operator hypershift product-cli
 
 .PHONY: update
-update: api-deps workspace-sync deps api api-docs clients docs-aggregate
+update: api-deps externalplatform-deps workspace-sync deps api api-docs clients docs-aggregate
 
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/golangci-lint)
 $(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod # Build golangci-lint from tools folder.
@@ -406,6 +406,10 @@ GO_TEST_FLAGS ?= -race
 test: generate test-e2ev2-unit
 	@echo "Running tests with $(NUM_CORES) parallel jobs..."
 	$(GO) test $(GO_TEST_FLAGS) -parallel=$(NUM_CORES) -count=1 -timeout=30m ./... -coverprofile cover.out
+	@# Its own module, so ./... above does not reach it. The contract module is what
+	@# integrators build against, and it has to keep compiling and passing on its own
+	@# dependency set rather than on the root module's resolved one.
+	cd externalplatform && $(GO) test $(GO_TEST_FLAGS) -count=1 ./...
 
 .PHONY: test-e2ev2-unit
 test-e2ev2-unit:
@@ -616,6 +620,13 @@ api-deps:
 	cd api && \
 	  $(GO) mod tidy && \
 	  $(GO) mod vendor && \
+	  $(GO) mod verify && \
+	  $(GO) list -m -mod=readonly -json all > /dev/null
+
+.PHONY: externalplatform-deps
+externalplatform-deps:
+	cd externalplatform && \
+	  $(GO) mod tidy && \
 	  $(GO) mod verify && \
 	  $(GO) list -m -mod=readonly -json all > /dev/null
 

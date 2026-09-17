@@ -1,19 +1,20 @@
-// Package externalplatform holds the parts of the External platform contract that more
-// than one HyperShift operator needs.
+// Package externalplatform adapts the External platform contract to HyperShift's own types.
 //
-// The hosted cluster object the integrator owns is read by two operators for two different
-// reasons: the HyperShift Operator instantiates it and reports its readiness on the
-// HostedCluster, and the Control Plane Operator reads the declaration the integrator
-// publishes on it. Keeping the resource stripping and the status decoding here means the
-// two cannot drift into disagreeing about what the contract says.
+// The contract itself lives in the github.com/openshift/hypershift/externalplatform module,
+// which integrators import, and this package is the HyperShift side of it: the same
+// resource stripping and status decoding, expressed in terms of ExternalTemplateReference
+// and a controller-runtime client rather than of bare strings and unstructured objects.
+// Delegating rather than restating is the point, because a HyperShift that disagreed with
+// the module about what the contract says would be a HyperShift that no integrator could
+// pass conformance against.
 package externalplatform
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
+	"github.com/openshift/hypershift/externalplatform/contract"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -22,34 +23,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	// templateResourceSuffix is the suffix the API requires on the resource name of a
-	// template, and which is stripped to derive the resource of the instantiated object:
-	// foohostedclustertemplates -> foohostedclusters.
-	templateResourceSuffix = "templates"
-
-	// instanceResourceSuffix replaces templateResourceSuffix. Both resources are plural.
-	instanceResourceSuffix = "s"
-)
-
 // HostedClusterObjectGVK resolves the GVK of the instantiated hosted cluster object from
 // the template reference, by stripping the templates suffix off the resource:
 // foohostedclustertemplates -> foohostedclusters.
 func HostedClusterObjectGVK(mapper meta.RESTMapper, ref hyperv1.ExternalTemplateReference) (schema.GroupVersionKind, error) {
-	if !strings.HasSuffix(ref.Resource, templateResourceSuffix) {
-		return schema.GroupVersionKind{}, fmt.Errorf("hosted cluster template resource %q must end in %q", ref.Resource, templateResourceSuffix)
-	}
-	instanceResource := strings.TrimSuffix(ref.Resource, templateResourceSuffix) + instanceResourceSuffix
-	return KindFor(mapper, ref.APIGroup, instanceResource)
+	return contract.InstanceGVK(mapper, ref.APIGroup, ref.Resource)
 }
 
 // KindFor resolves a group and plural resource to the GVK of its preferred served version.
 func KindFor(mapper meta.RESTMapper, apiGroup, resource string) (schema.GroupVersionKind, error) {
-	gvk, err := mapper.KindFor(schema.GroupVersionResource{Group: apiGroup, Resource: resource})
-	if err != nil {
-		return schema.GroupVersionKind{}, fmt.Errorf("failed to resolve %s.%s: %w", resource, apiGroup, err)
-	}
-	return gvk, nil
+	return contract.KindFor(mapper, apiGroup, resource)
 }
 
 // GetHostedClusterObject returns the instantiated hosted cluster object living at the given
@@ -79,40 +62,5 @@ func GetHostedClusterObject(ctx context.Context, c client.Client, ref hyperv1.Ex
 // rather than a nil: the contract asks for both values to be published together, and
 // recording half of one would pin a value the integrator never agreed to.
 func Declaration(hostedClusterObject *unstructured.Unstructured) (*hyperv1.ExternalPlatformStatus, error) {
-	platform, found, err := unstructured.NestedMap(hostedClusterObject.Object, "status", "platform")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read status.platform: %w", err)
-	}
-	if !found || len(platform) == 0 {
-		return nil, nil
-	}
-
-	name, _, err := unstructured.NestedString(platform, "name")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read status.platform.name: %w", err)
-	}
-	if name == "" {
-		return nil, fmt.Errorf("status.platform.name is not set")
-	}
-
-	state, _, err := unstructured.NestedString(platform, "cloudControllerManager", "state")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read status.platform.cloudControllerManager.state: %w", err)
-	}
-	switch hyperv1.ExternalCloudControllerManagerState(state) {
-	case hyperv1.ExternalCloudControllerManager, hyperv1.NoCloudControllerManager:
-	default:
-		// Checked here rather than left to the API server so that a typo surfaces as a
-		// message naming the offending value, instead of as a rejected status patch on an
-		// unrelated field.
-		return nil, fmt.Errorf("status.platform.cloudControllerManager.state must be %q or %q, got %q",
-			hyperv1.ExternalCloudControllerManager, hyperv1.NoCloudControllerManager, state)
-	}
-
-	return &hyperv1.ExternalPlatformStatus{
-		Name: name,
-		CloudControllerManager: hyperv1.ExternalCloudControllerManagerStatus{
-			State: hyperv1.ExternalCloudControllerManagerState(state),
-		},
-	}, nil
+	return contract.Platform(hostedClusterObject)
 }
