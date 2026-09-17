@@ -133,3 +133,16 @@ never changes afterwards, that the infrastructure reference is named early and s
 that a finalizer is held, and that deletion completes. Every one of those failures looks
 like a HyperShift bug from the outside, and none of them are caught by testing that your
 provider provisions — in every case it does.
+
+`integration/` is that test, written out in full for this example and runnable with nothing
+but envtest: it installs the custom resource definitions in `manifests/`, starts the real
+reconciler, stands in for Cluster API Provider AWS in four lines, and runs the suite.
+
+```bash
+make test-envtest-externalplatform          # from the repository root
+```
+
+Do not skip the part where it installs HyperShift's own `HostedControlPlane` definition
+straight out of the tree rather than a copy. A copy goes stale silently, and a stale copy is
+precisely the version skew the suite exists to catch. Copy the pattern: point your test at
+the definition shipped by the HyperShift release you support.

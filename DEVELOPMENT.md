@@ -20,8 +20,15 @@ make e2ev2                    # Build v2 E2E test binary (bin/test-e2e-v2)
 make tests                    # Compile all tests (no execution)
 make test-envtest-ocp         # Run envtest for CEL validations (OpenShift k8s versions)
 make test-envtest-kube        # Run envtest for vanilla k8s versions
-make test-envtest-api-all     # Run envtest for both
+make test-envtest-externalplatform  # Run the External platform conformance suite
+make test-envtest-api-all     # Run all three
 ```
+
+`make test` also runs the `externalplatform/` module's own tests, since it is a separate
+module that `./...` does not reach. That module is deliberately not vendored: it has to keep
+compiling and passing on its own declared dependency set, which is the one an integrator
+gets, rather than on the root module's resolved one. Commands run against it therefore use
+`-mod=readonly`, not the `-mod=vendor` the rest of the repo uses.
 
 To run a single unit test or package:
 ```bash

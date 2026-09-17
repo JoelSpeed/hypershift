@@ -47,6 +47,9 @@ ENVTEST_KUBE_ASSETS_DIR ?= $(abspath $(TOOLS_BIN_DIR)/envtest-kube)
 GO_GCFLAGS ?= -gcflags=all='-N -l'
 GO=GO111MODULE=on GOWORK=off GOFLAGS=-mod=vendor go
 GOWS=GO111MODULE=on GOWORK=$(shell pwd)/hack/workspace/go.work GOFLAGS=-mod=vendor go
+# For the in-repo modules an integrator consumes, which are deliberately not vendored: they
+# have to resolve on their own declared dependency set rather than on the root module's.
+GOUNVENDORED=GO111MODULE=on GOWORK=off GOFLAGS=-mod=readonly go
 COMMIT_HASH ?= $(shell git rev-parse HEAD 2>/dev/null)
 VERSION_PKG=github.com/openshift/hypershift/support/supportedversion
 GO_LDFLAGS=-ldflags '-X $(VERSION_PKG).commitHash=$(COMMIT_HASH)'
@@ -409,7 +412,7 @@ test: generate test-e2ev2-unit
 	@# Its own module, so ./... above does not reach it. The contract module is what
 	@# integrators build against, and it has to keep compiling and passing on its own
 	@# dependency set rather than on the root module's resolved one.
-	cd externalplatform && $(GO) test $(GO_TEST_FLAGS) -count=1 ./...
+	cd externalplatform && $(GOUNVENDORED) test $(GO_TEST_FLAGS) -count=1 ./...
 
 .PHONY: test-e2ev2-unit
 test-e2ev2-unit:
@@ -536,8 +539,20 @@ else
 	@echo "=== All Kubernetes envtest versions passed ==="
 endif
 
+# The External platform contract module's own envtest, which runs the conformance suite
+# against the reference integration. One version is enough: unlike the CEL fixtures above it
+# is not testing the API server's behaviour across versions, it is testing that HyperShift's
+# custom resource definitions and an integrator's controller still agree.
+ENVTEST_EXTERNALPLATFORM_K8S_VERSION ?= $(lastword $(ENVTEST_KUBE_VERSIONS))
+
+.PHONY: test-envtest-externalplatform
+test-envtest-externalplatform: $(SETUP_ENVTEST) ## Run the External platform conformance suite against the reference integration
+	@echo "=== Running External platform envtest for Kubernetes $(ENVTEST_EXTERNALPLATFORM_K8S_VERSION) ==="
+	cd externalplatform && KUBEBUILDER_ASSETS="$$($(SETUP_ENVTEST) use --use-env --bin-dir $(ENVTEST_KUBE_ASSETS_DIR) -p path $(ENVTEST_EXTERNALPLATFORM_K8S_VERSION))" \
+	$(GOUNVENDORED) test -tags envtest -count=1 -timeout=30m ./...
+
 .PHONY: test-envtest-api-all
-test-envtest-api-all: test-envtest-ocp test-envtest-kube ## Run all envtest API tests (ENVTEST_JOBS=0|N|MAX)
+test-envtest-api-all: test-envtest-ocp test-envtest-kube test-envtest-externalplatform ## Run all envtest API tests (ENVTEST_JOBS=0|N|MAX)
 
 .PHONY: e2e
 e2e: reqserving-e2e e2ev2 e2ev2-create-guests e2ev2-run-tests e2ev2-destroy-guests e2ev2-dump-guests backuprestore-e2e
