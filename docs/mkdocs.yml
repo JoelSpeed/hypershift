@@ -390,6 +390,7 @@ nav:
   - reference/api.md
   - reference/concepts-and-personas.md
   - reference/controller-architecture.md
+  - 'External Platform Contract': reference/external-platform-contract.md
   - reference/goals-and-design-invariants.md
   - 'HO Konflux Release Gating':
     - reference/ho-release-gating/index.md
