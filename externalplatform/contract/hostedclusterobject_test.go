@@ -338,3 +338,63 @@ func lastTransitionTime(t *testing.T, object *unstructured.Unstructured) string 
 	t.Fatal("no Ready condition found")
 	return ""
 }
+
+func TestAnExplicitlyNullStatusIsTreatedAsAnEmptyOne(t *testing.T) {
+	// An object whose status subresource has never been written can come back carrying a
+	// literal null, and the nested accessors report that as a type error rather than as an
+	// absent value. Every accessor here has to survive the very first reconcile.
+	object := hostedClusterObject()
+	object.Object["status"] = nil
+
+	if err := SetPlatform(object, "ExampleCloud", hyperv1.ExternalCloudControllerManager); err != nil {
+		t.Fatalf("unexpected error from SetPlatform: %v", err)
+	}
+	if err := SetInfrastructure(object, "infrastructure.cluster.x-k8s.io", "FooCluster", "example"); err != nil {
+		t.Fatalf("unexpected error from SetInfrastructure: %v", err)
+	}
+	if err := SetReady(object, metav1.ConditionTrue, "AsExpected", "Everything is up"); err != nil {
+		t.Fatalf("unexpected error from SetReady: %v", err)
+	}
+
+	platform, err := Platform(object)
+	if err != nil {
+		t.Fatalf("unexpected error from Platform: %v", err)
+	}
+	if platform == nil || platform.Name != "ExampleCloud" {
+		t.Errorf("expected the declaration to be readable back, got %v", platform)
+	}
+	condition, err := Ready(object)
+	if err != nil {
+		t.Fatalf("unexpected error from Ready: %v", err)
+	}
+	if condition == nil || condition.Status != metav1.ConditionTrue {
+		t.Errorf("expected Ready=True, got %v", condition)
+	}
+}
+
+func TestReadersTolerateANullStatus(t *testing.T) {
+	object := hostedClusterObject()
+	object.Object["status"] = nil
+
+	platform, err := Platform(object)
+	if err != nil {
+		t.Fatalf("unexpected error from Platform: %v", err)
+	}
+	if platform != nil {
+		t.Errorf("expected no declaration, got %v", platform)
+	}
+	apiGroup, kind, name, err := Infrastructure(object)
+	if err != nil {
+		t.Fatalf("unexpected error from Infrastructure: %v", err)
+	}
+	if apiGroup != "" || kind != "" || name != "" {
+		t.Errorf("expected no infrastructure object, got %s/%s/%s", apiGroup, kind, name)
+	}
+	condition, err := Ready(object)
+	if err != nil {
+		t.Fatalf("unexpected error from Ready: %v", err)
+	}
+	if condition != nil {
+		t.Errorf("expected no condition, got %v", condition)
+	}
+}

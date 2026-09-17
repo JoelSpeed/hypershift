@@ -9,6 +9,22 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// normalizeStatus drops an explicitly null status.
+//
+// An object whose status subresource has never been written can come back carrying
+// "status": null rather than no status at all, and every nested accessor below reports that
+// as a type error rather than as an empty object. Dropping the key changes nothing that is
+// serialized and makes the first write to status behave like every subsequent one.
+func normalizeStatus(hostedClusterObject *unstructured.Unstructured) {
+	if hostedClusterObject.Object == nil {
+		hostedClusterObject.Object = map[string]any{}
+		return
+	}
+	if status, found := hostedClusterObject.Object["status"]; found && status == nil {
+		delete(hostedClusterObject.Object, "status")
+	}
+}
+
 // ControlPlaneEndpoint returns the endpoint HyperShift wrote onto the hosted cluster object.
 //
 // It is the one part of the spec HyperShift keeps reconciling, because it is not knowable
@@ -44,6 +60,8 @@ func ControlPlaneEndpoint(hostedClusterObject *unstructured.Unstructured) (hyper
 // the cluster was installed with. In practice an integrator hardcodes both values per
 // platform, which is why this takes them rather than reading them from anywhere.
 func SetPlatform(hostedClusterObject *unstructured.Unstructured, name string, state hyperv1.ExternalCloudControllerManagerState) error {
+	normalizeStatus(hostedClusterObject)
+
 	if name == "" {
 		return fmt.Errorf("the platform name must not be empty")
 	}
@@ -70,6 +88,8 @@ func SetPlatform(hostedClusterObject *unstructured.Unstructured, name string, st
 // than a nil: the contract asks for both values together, and recording half of one would
 // pin a value the integrator never agreed to.
 func Platform(hostedClusterObject *unstructured.Unstructured) (*hyperv1.ExternalPlatformStatus, error) {
+	normalizeStatus(hostedClusterObject)
+
 	platform, found, err := unstructured.NestedMap(hostedClusterObject.Object, "status", "platform")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read status.platform: %w", err)
@@ -118,6 +138,8 @@ func Platform(hostedClusterObject *unstructured.Unstructured) (*hyperv1.External
 // No version, matching Cluster API's own ContractVersionedObjectReference. HyperShift
 // resolves the served version from the management cluster.
 func SetInfrastructure(hostedClusterObject *unstructured.Unstructured, apiGroup, kind, name string) error {
+	normalizeStatus(hostedClusterObject)
+
 	for _, field := range []struct{ key, value string }{
 		{"apiGroup", apiGroup},
 		{"kind", kind},
@@ -136,6 +158,8 @@ func SetInfrastructure(hostedClusterObject *unstructured.Unstructured, apiGroup,
 // Infrastructure reads back the Cluster API infrastructure object the integrator named.
 // Empty values mean the integrator has not reported one yet.
 func Infrastructure(hostedClusterObject *unstructured.Unstructured) (apiGroup, kind, name string, err error) {
+	normalizeStatus(hostedClusterObject)
+
 	for _, field := range []struct {
 		key  string
 		into *string
@@ -162,6 +186,8 @@ func Infrastructure(hostedClusterObject *unstructured.Unstructured) (apiGroup, k
 // "waiting on the provider for N minutes" reflects how long the provider has actually been
 // in this state rather than how long ago it last reconciled.
 func SetReady(hostedClusterObject *unstructured.Unstructured, status metav1.ConditionStatus, reason, message string) error {
+	normalizeStatus(hostedClusterObject)
+
 	conditions, _, err := unstructured.NestedSlice(hostedClusterObject.Object, "status", "conditions")
 	if err != nil {
 		return fmt.Errorf("failed to read status.conditions: %w", err)
@@ -198,6 +224,8 @@ func SetReady(hostedClusterObject *unstructured.Unstructured, status metav1.Cond
 
 // Ready returns the contract's Ready condition, or nil if the integrator has not set one.
 func Ready(hostedClusterObject *unstructured.Unstructured) (*metav1.Condition, error) {
+	normalizeStatus(hostedClusterObject)
+
 	conditions, found, err := unstructured.NestedSlice(hostedClusterObject.Object, "status", "conditions")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read status.conditions: %w", err)
