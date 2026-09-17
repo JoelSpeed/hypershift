@@ -20,6 +20,10 @@ type IngressParams struct {
 	LoadBalancerIP             string
 	EndpointPublishingStrategy *v1.EndpointPublishingStrategy
 	DefaultCertificate         hyperv1.IngressDefaultCertificateReference
+
+	// ExternalCloudControllerManager is the External platform's recorded declaration of
+	// whether a cloud controller manager runs, and is empty on every other platform.
+	ExternalCloudControllerManager hyperv1.ExternalCloudControllerManagerState
 }
 
 func NewIngressParams(hcp *hyperv1.HostedControlPlane) *IngressParams {
@@ -70,6 +74,11 @@ func NewIngressParams(hcp *hyperv1.HostedControlPlane) *IngressParams {
 		defaultCertificate = hcp.Spec.OperatorConfiguration.IngressOperator.DefaultCertificate
 	}
 
+	var externalCloudControllerManager hyperv1.ExternalCloudControllerManagerState
+	if hcp.Spec.Platform.Type == hyperv1.ExternalPlatform && hcp.Status.Platform != nil {
+		externalCloudControllerManager = hcp.Status.Platform.External.CloudControllerManager.State
+	}
+
 	return &IngressParams{
 		IngressSubdomain:           globalconfig.IngressDomain(hcp),
 		Replicas:                   replicas,
@@ -81,5 +90,7 @@ func NewIngressParams(hcp *hyperv1.HostedControlPlane) *IngressParams {
 		LoadBalancerIP:             loadBalancerIP,
 		EndpointPublishingStrategy: endpointPublishingStrategy,
 		DefaultCertificate:         defaultCertificate,
+
+		ExternalCloudControllerManager: externalCloudControllerManager,
 	}
 }

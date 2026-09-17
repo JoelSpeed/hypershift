@@ -89,6 +89,53 @@ func TestReconcileRegistryConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:                    "External defaults to emptyDir on create",
+			inputAvailabilityPolicy: hyperv1.SingleReplica,
+			inputPlatform:           hyperv1.ExternalPlatform,
+			inputConfig:             manifests.Registry(),
+			expectedConfig: &imageregistryv1.Config{
+				Spec: imageregistryv1.ImageRegistrySpec{
+					OperatorSpec: operatorv1.OperatorSpec{
+						ManagementState: operatorv1.Managed,
+					},
+					Replicas: 1,
+					Storage: imageregistryv1.ImageRegistryConfigStorage{
+						EmptyDir: &imageregistryv1.ImageRegistryConfigStorageEmptyDir{},
+					},
+				},
+			},
+		},
+		{
+			name:                    "External keeps configured storage after create",
+			inputAvailabilityPolicy: hyperv1.SingleReplica,
+			inputPlatform:           hyperv1.ExternalPlatform,
+			inputConfig: &imageregistryv1.Config{
+				ObjectMeta: metav1.ObjectMeta{
+					ResourceVersion: "v1",
+				},
+				Spec: imageregistryv1.ImageRegistrySpec{
+					OperatorSpec: operatorv1.OperatorSpec{
+						ManagementState: operatorv1.Managed,
+					},
+					Replicas: 1,
+					Storage: imageregistryv1.ImageRegistryConfigStorage{
+						PVC: &imageregistryv1.ImageRegistryConfigStoragePVC{},
+					},
+				},
+			},
+			expectedConfig: &imageregistryv1.Config{
+				Spec: imageregistryv1.ImageRegistrySpec{
+					OperatorSpec: operatorv1.OperatorSpec{
+						ManagementState: operatorv1.Managed,
+					},
+					Replicas: 1,
+					Storage: imageregistryv1.ImageRegistryConfigStorage{
+						PVC: &imageregistryv1.ImageRegistryConfigStoragePVC{},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range testsCases {
 		t.Run(tc.name, func(t *testing.T) {

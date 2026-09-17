@@ -137,6 +137,12 @@ func checkOperandsRolloutStatus(cpContext component.WorkloadContext) (bool, erro
 				ReleaseImageKey: "azure-file-csi-driver",
 			},
 		}
+	case hyperv1.ExternalPlatform:
+		// The cluster storage operator is deployed on External, but HyperShift knows of no
+		// CSI driver to wait for: any driver is the integrator's to deploy and to report on
+		// through its own ControlPlaneComponent. Explicit rather than falling through to
+		// the default so that this is a recorded decision.
+		return true, nil
 	default:
 		return true, nil
 	}

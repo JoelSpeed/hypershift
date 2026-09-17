@@ -30,6 +30,16 @@ type MCSParams struct {
 }
 
 func NewMCSParams(hcp *hyperv1.HostedControlPlane, rootCA, pullSecret *corev1.Secret, userCA, kubeletClientCA *corev1.ConfigMap) (*MCSParams, error) {
+	if hcp.Spec.Platform.Type == hyperv1.ExternalPlatform && !globalconfig.HasExternalPlatformDeclaration(hcp) {
+		// Refuse to render rather than render a default. What this config serves decides
+		// the cloud provider every node's kubelet starts with, and it is covered by the
+		// NodePool configuration hash, so guessing would boot nodes against the wrong
+		// cloud provider and then roll all of them once the declaration arrived. Nodes
+		// cannot usefully boot before the integrator has provisioned anything, so waiting
+		// costs no real ordering.
+		return &MCSParams{}, fmt.Errorf("waiting for the external platform provider to declare the platform before rendering machine config")
+	}
+
 	dns := globalconfig.DNSConfig()
 	globalconfig.ReconcileDNSConfig(dns, hcp)
 

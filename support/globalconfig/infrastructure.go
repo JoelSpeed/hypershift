@@ -134,5 +134,47 @@ func ReconcileInfrastructure(infra *configv1.Infrastructure, hcp *hyperv1.Hosted
 			})
 		}
 		infra.Status.PlatformStatus.GCP.ResourceLabels = labels
+	case hyperv1.ExternalPlatform:
+		// Both values come from the declaration the integrator published and HyperShift
+		// recorded, not from the spec: a platform's name and whether it runs a cloud
+		// controller manager are properties of the integration rather than of a cluster.
+		//
+		// This is the only place the cloud provider the kubelet runs with is decided.
+		// cloudControllerManager.state of External makes the machine config operator start
+		// kubelets with --cloud-provider=external, so nodes join tainted uninitialized and
+		// stay unschedulable until the integrator's cloud controller manager removes the
+		// taint. Callers on the bootstrap path must therefore refuse to render before the
+		// declaration has been recorded, rather than render a guess and correct it later.
+		declaration := externalPlatformDeclaration(hcp)
+		infra.Spec.PlatformSpec.External = &configv1.ExternalPlatformSpec{
+			PlatformName: declaration.Name,
+		}
+		infra.Status.PlatformStatus.External = &configv1.ExternalPlatformStatus{
+			CloudControllerManager: configv1.CloudControllerManagerStatus{
+				State: configv1.CloudControllerManagerState(declaration.CloudControllerManager.State),
+			},
+		}
 	}
+}
+
+// externalPlatformDeclaration returns the declaration recorded on the HostedControlPlane,
+// or the zero value if none has been. Callers that must not act on the zero value check
+// HasExternalPlatformDeclaration first.
+func externalPlatformDeclaration(hcp *hyperv1.HostedControlPlane) hyperv1.ExternalPlatformStatus {
+	if hcp.Status.Platform == nil {
+		return hyperv1.ExternalPlatformStatus{}
+	}
+	return hcp.Status.Platform.External
+}
+
+// HasExternalPlatformDeclaration reports whether the integrator's platform declaration has
+// been recorded on the HostedControlPlane.
+//
+// Anything that renders guest configuration destined for a node must gate on this. The
+// declaration decides the kubelet's cloud provider, which is baked into the bootstrap
+// configuration and covered by the NodePool configuration hash, so rendering a default and
+// correcting it once the declaration arrives would boot nodes against the wrong cloud
+// provider and then roll every one of them.
+func HasExternalPlatformDeclaration(hcp *hyperv1.HostedControlPlane) bool {
+	return externalPlatformDeclaration(hcp) != hyperv1.ExternalPlatformStatus{}
 }

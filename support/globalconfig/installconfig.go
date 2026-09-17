@@ -7,6 +7,8 @@ import (
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/openshift/hypershift/support/netutil"
+
+	configv1 "github.com/openshift/api/config/v1"
 )
 
 // Abbreviated version of the installer's InstallConfig type
@@ -16,6 +18,11 @@ type InstallConfig struct {
 	Platform     string
 	Region       string
 	ProjectID    string
+
+	// PlatformName and CloudControllerManager are the External platform's, and mirror the
+	// declaration recorded on the HostedControlPlane.
+	PlatformName           string
+	CloudControllerManager string
 }
 
 func NewInstallConfig(hcp *hyperv1.HostedControlPlane) *InstallConfig {
@@ -29,6 +36,14 @@ func NewInstallConfig(hcp *hyperv1.HostedControlPlane) *InstallConfig {
 	case hyperv1.GCPPlatform:
 		cfg.Region = hcp.Spec.Platform.GCP.Region
 		cfg.ProjectID = hcp.Spec.Platform.GCP.Project
+	case hyperv1.ExternalPlatform:
+		declaration := externalPlatformDeclaration(hcp)
+		cfg.PlatformName = declaration.Name
+		// The installer spells "no cloud controller manager" as the empty string rather
+		// than as None, and this document is read by installer-derived code.
+		if declaration.CloudControllerManager.State == hyperv1.ExternalCloudControllerManager {
+			cfg.CloudControllerManager = string(configv1.CloudControllerManagerExternal)
+		}
 	}
 	return cfg
 }
@@ -52,6 +67,12 @@ platform:
   gcp:
     projectID: {{ .ProjectID }}
     region: {{ .Region }}
+{{- else if eq .Platform "External" }}
+  external:
+    platformName: {{ .PlatformName }}
+{{- if .CloudControllerManager }}
+    cloudControllerManager: {{ .CloudControllerManager }}
+{{- end }}
 {{- else }}
   none: {}
 {{- end }}

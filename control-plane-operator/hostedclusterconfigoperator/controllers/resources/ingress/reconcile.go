@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func ReconcileDefaultIngressController(ingressController *operatorv1.IngressController, ingressSubdomain string, platformType hyperv1.PlatformType, replicas int32, isIBMCloudUPI bool, isPrivate bool, useNLB bool, loadBalancerScope operatorv1.LoadBalancerScope, loadBalancerIP string, endpointPublishingStrategy *operatorv1.EndpointPublishingStrategy) error {
+func ReconcileDefaultIngressController(ingressController *operatorv1.IngressController, ingressSubdomain string, platformType hyperv1.PlatformType, replicas int32, isIBMCloudUPI bool, isPrivate bool, useNLB bool, loadBalancerScope operatorv1.LoadBalancerScope, loadBalancerIP string, endpointPublishingStrategy *operatorv1.EndpointPublishingStrategy, externalCloudControllerManager hyperv1.ExternalCloudControllerManagerState) error {
 	// If ingress controller already exists, skip reconciliation to allow day-2 configuration
 	if ingressController.ResourceVersion != "" {
 		return nil
@@ -68,6 +68,26 @@ func ReconcileDefaultIngressController(ingressController *operatorv1.IngressCont
 					LoadBalancer: &operatorv1.LoadBalancerStrategy{
 						Scope: loadBalancerScope,
 					},
+				}
+			}
+		case hyperv1.ExternalPlatform:
+			// A cloud controller manager is what makes a Service of type LoadBalancer
+			// resolvable, so its absence is the signal that there is nothing to ask for
+			// one from. Without it the ingress controller would sit forever with a
+			// pending Service, so fall back to host networking as the None platform does.
+			//
+			// An integrator whose platform does neither creates the IngressController
+			// itself: this function returns early when one already exists.
+			if externalCloudControllerManager == hyperv1.ExternalCloudControllerManager {
+				ingressController.Spec.EndpointPublishingStrategy = &operatorv1.EndpointPublishingStrategy{
+					Type: operatorv1.LoadBalancerServiceStrategyType,
+					LoadBalancer: &operatorv1.LoadBalancerStrategy{
+						Scope: loadBalancerScope,
+					},
+				}
+			} else {
+				ingressController.Spec.EndpointPublishingStrategy = &operatorv1.EndpointPublishingStrategy{
+					Type: operatorv1.HostNetworkStrategyType,
 				}
 			}
 		case hyperv1.OpenStackPlatform:

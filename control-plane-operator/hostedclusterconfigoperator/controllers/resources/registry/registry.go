@@ -31,9 +31,12 @@ func ReconcileRegistryConfig(cfg *imageregistryv1.Config, platform hyperv1.Platf
 		}
 	}
 
-	// Initially assign storage as emptyDir for KubevirtPlatform and NonePlatform
+	// Initially assign storage as emptyDir for KubevirtPlatform, NonePlatform and
+	// ExternalPlatform. HyperShift knows of no object storage on any of them, and without
+	// a storage backend the image registry sits Degraded. Set on create only, so an
+	// integrator that does have storage configures it afterwards and keeps it.
 	// Allow user to change storage afterwards
-	if cfg.ResourceVersion == "" && (platform == hyperv1.KubevirtPlatform || platform == hyperv1.NonePlatform) {
+	if cfg.ResourceVersion == "" && (platform == hyperv1.KubevirtPlatform || platform == hyperv1.NonePlatform || platform == hyperv1.ExternalPlatform) {
 		cfg.Spec.Storage = imageregistryv1.ImageRegistryConfigStorage{EmptyDir: &imageregistryv1.ImageRegistryConfigStorageEmptyDir{}}
 	}
 	// IBM Cloud platform allows to initialize the registry config and then afterwards the client is in full control of the updates

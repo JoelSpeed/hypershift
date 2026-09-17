@@ -1,0 +1,153 @@
+cluster-apiserver-config.yaml: |
+  apiVersion: config.openshift.io/v1
+  kind: APIServer
+  metadata:
+    name: cluster
+  spec:
+    audit: {}
+    clientCA:
+      name: ""
+    encryption: {}
+    servingCerts: {}
+  status: {}
+cluster-dns-02-config.yaml: |
+  apiVersion: config.openshift.io/v1
+  kind: DNS
+  metadata:
+    name: cluster
+  spec:
+    baseDomain: example.example.com
+    platform:
+      aws: null
+      type: ""
+  status: {}
+cluster-infrastructure-02-config.yaml: |
+  apiVersion: config.openshift.io/v1
+  kind: Infrastructure
+  metadata:
+    name: cluster
+  spec:
+    cloudConfig:
+      name: ""
+    platformSpec:
+      aws: {}
+      type: AWS
+  status:
+    apiServerInternalURI: https://api.example.com:6443
+    apiServerURL: https://api.example.com:6443
+    controlPlaneTopology: External
+    etcdDiscoveryDomain: example.example.com
+    infrastructureName: example-abcde
+    infrastructureTopology: SingleReplica
+    platform: AWS
+    platformStatus:
+      aws:
+        region: us-east-1
+        resourceTags:
+        - key: team
+          value: hypershift
+      type: AWS
+cluster-network-02-config.yaml: |
+  apiVersion: config.openshift.io/v1
+  kind: Network
+  metadata:
+    name: cluster
+  spec:
+    clusterNetwork:
+    - cidr: 10.132.0.0/14
+      hostPrefix: 23
+    networkDiagnostics:
+      mode: ""
+      sourcePlacement:
+        nodeSelector: null
+        tolerations: null
+      targetPlacement:
+        nodeSelector: null
+        tolerations: null
+    networkType: OVNKubernetes
+    serviceNetwork:
+    - 172.31.0.0/16
+  status: {}
+cluster-proxy-01-config.yaml: |
+  apiVersion: config.openshift.io/v1
+  kind: Proxy
+  metadata:
+    name: cluster
+  spec:
+    trustedCA:
+      name: ""
+  status: {}
+configuration-hash: 77074ba4
+image-config.yaml: |
+  apiVersion: config.openshift.io/v1
+  kind: Image
+  metadata:
+    name: cluster
+  spec:
+    additionalTrustedCA:
+      name: ""
+    imageStreamImportMode: ""
+    registrySources: {}
+  status: {}
+install-config.yaml: |
+  apiVersion: v1
+  controlPlane:
+    replicas: 1
+  networking:
+    machineNetwork:
+    - cidr: 10.0.0.0/16
+  platform:
+    aws:
+      region: us-east-1
+master.machineconfigpool.yaml: |
+  apiVersion: machineconfiguration.openshift.io/v1
+  kind: MachineConfigPool
+  metadata:
+    labels:
+      machineconfiguration.openshift.io/mco-built-in: ""
+    name: master
+  spec:
+    configuration: {}
+    machineConfigSelector:
+      matchLabels:
+        machineconfiguration.openshift.io/role: worker
+    nodeSelector:
+      matchLabels:
+        node-role.kubernetes.io/worker: ""
+    paused: false
+  status:
+    certExpirys: null
+    conditions: null
+    configuration: {}
+    degradedMachineCount: 0
+    machineCount: 0
+    readyMachineCount: 0
+    unavailableMachineCount: 0
+    updatedMachineCount: 0
+root-ca.crt: ""
+signer-ca.crt: ""
+worker.machineconfigpool.yaml: |
+  apiVersion: machineconfiguration.openshift.io/v1
+  kind: MachineConfigPool
+  metadata:
+    labels:
+      machineconfiguration.openshift.io/mco-built-in: ""
+    name: worker
+  spec:
+    configuration: {}
+    machineConfigSelector:
+      matchLabels:
+        machineconfiguration.openshift.io/role: worker
+    nodeSelector:
+      matchLabels:
+        node-role.kubernetes.io/worker: ""
+    paused: false
+  status:
+    certExpirys: null
+    conditions: null
+    configuration: {}
+    degradedMachineCount: 0
+    machineCount: 0
+    readyMachineCount: 0
+    unavailableMachineCount: 0
+    updatedMachineCount: 0

@@ -233,6 +233,11 @@ func ReconcilePrivateService(svc *corev1.Service, hcp *hyperv1.HostedControlPlan
 	switch hcp.Spec.Platform.Type {
 	case hyperv1.AzurePlatform:
 		svc.Annotations[azureutil.InternalLoadBalancerAnnotation] = azureutil.InternalLoadBalancerValue
+	case hyperv1.ExternalPlatform:
+		// No annotations: the default branch below is AWS-specific, and HyperShift knows
+		// nothing about how the integrator's load balancers are configured. Unreachable
+		// today because External does not support private endpoint access, and explicit so
+		// that enabling it later does not silently stamp AWS annotations on the Service.
 	default:
 		// In-tree AWS cloud provider annotation for cross-zone load balancing (OpenShift management clusters).
 		svc.Annotations["service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled"] = "true"

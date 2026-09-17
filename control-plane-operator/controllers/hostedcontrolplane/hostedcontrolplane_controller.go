@@ -1306,7 +1306,15 @@ func (r *HostedControlPlaneReconciler) reconcileCPOV2(ctx context.Context, hcp *
 		return fmt.Errorf("failed to reconcile external platform status: %w", err)
 	}
 
-	if _, exists := hcp.Annotations[hyperv1.DisableIgnitionServerAnnotation]; !exists {
+	_, ignitionServerDisabled := hcp.Annotations[hyperv1.DisableIgnitionServerAnnotation]
+	switch {
+	case ignitionServerDisabled:
+	case hcp.Spec.Platform.Type == hyperv1.ExternalPlatform && !globalconfig.HasExternalPlatformDeclaration(hcp):
+		// Skipped rather than attempted and failed: the machine config these configs carry
+		// decides the cloud provider every node boots with, and the reason for the wait is
+		// already reported on ValidExternalPlatformDeclaration above.
+		r.Log.Info("Skipping ignition-server configs until the external platform provider declares the platform")
+	default:
 		// Reconcile Ignition-server configs
 		r.Log.Info("Reconciling ignition-server configs")
 		if err := r.reconcileIgnitionServerConfigs(ctx, hcp, createOrUpdate); err != nil {

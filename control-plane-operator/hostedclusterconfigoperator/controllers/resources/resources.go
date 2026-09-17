@@ -1108,21 +1108,28 @@ func (r *reconciler) reconcileConfig(ctx context.Context, hcp *hyperv1.HostedCon
 		return fmt.Errorf("hosted control plane does not have an APIServer endpoint address")
 	}
 
-	// Infrastructure is first reconciled for its spec
-	infra := globalconfig.InfrastructureConfig()
-	var currentInfra *configv1.Infrastructure
-	if _, err := r.CreateOrUpdate(ctx, r.client, infra, func() error {
-		currentInfra = infra.DeepCopy()
-		globalconfig.ReconcileInfrastructure(infra, hcp)
-		return nil
-	}); err != nil {
-		errs = append(errs, fmt.Errorf("failed to reconcile infrastructure config spec: %w", err))
-	} else {
-		// It is reconciled a second time to update its status
-		globalconfig.ReconcileInfrastructure(infra, hcp)
-		if !equality.Semantic.DeepEqual(infra.Status, currentInfra.Status) {
-			if err := r.client.Status().Update(ctx, infra); err != nil {
-				errs = append(errs, fmt.Errorf("failed to update infrastructure status: %w", err))
+	// Infrastructure is first reconciled for its spec.
+	//
+	// On the External platform it is not reconciled at all until the integrator has
+	// declared the platform. Both platformName and cloudControllerManager.state are
+	// immutable once set in the guest cluster's own API validation, so writing a
+	// placeholder would permanently prevent the real values from ever being accepted.
+	if hcp.Spec.Platform.Type != hyperv1.ExternalPlatform || globalconfig.HasExternalPlatformDeclaration(hcp) {
+		infra := globalconfig.InfrastructureConfig()
+		var currentInfra *configv1.Infrastructure
+		if _, err := r.CreateOrUpdate(ctx, r.client, infra, func() error {
+			currentInfra = infra.DeepCopy()
+			globalconfig.ReconcileInfrastructure(infra, hcp)
+			return nil
+		}); err != nil {
+			errs = append(errs, fmt.Errorf("failed to reconcile infrastructure config spec: %w", err))
+		} else {
+			// It is reconciled a second time to update its status
+			globalconfig.ReconcileInfrastructure(infra, hcp)
+			if !equality.Semantic.DeepEqual(infra.Status, currentInfra.Status) {
+				if err := r.client.Status().Update(ctx, infra); err != nil {
+					errs = append(errs, fmt.Errorf("failed to update infrastructure status: %w", err))
+				}
 			}
 		}
 	}
@@ -1421,7 +1428,7 @@ func (r *reconciler) reconcileIngressController(ctx context.Context, hcp *hyperv
 	p := ingress.NewIngressParams(hcp)
 	ingressController := manifests.IngressDefaultIngressController()
 	if _, err := r.CreateOrUpdate(ctx, r.client, ingressController, func() error {
-		return ingress.ReconcileDefaultIngressController(ingressController, p.IngressSubdomain, p.PlatformType, p.Replicas, p.IBMCloudUPI, p.IsPrivate, p.AWSNLB, p.LoadBalancerScope, p.LoadBalancerIP, p.EndpointPublishingStrategy)
+		return ingress.ReconcileDefaultIngressController(ingressController, p.IngressSubdomain, p.PlatformType, p.Replicas, p.IBMCloudUPI, p.IsPrivate, p.AWSNLB, p.LoadBalancerScope, p.LoadBalancerIP, p.EndpointPublishingStrategy, p.ExternalCloudControllerManager)
 	}); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile default ingress controller: %w", err))
 	}
