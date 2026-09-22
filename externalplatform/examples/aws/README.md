@@ -11,7 +11,8 @@ and a cloud controller manager.
 
 | | |
 |---|---|
-| [`manifests/01-crds.yaml`](manifests/01-crds.yaml) | `AWSHostedClusterTemplate` and `AWSHostedCluster`, the integration's own API |
+| [`api/v1alpha1`](api/v1alpha1) | `AWSHostedClusterTemplate` and `AWSHostedCluster`, the integration's own API, as Go types |
+| [`manifests/01-crds.yaml`](manifests/01-crds.yaml) | Those two types as custom resource definitions, generated from them |
 | [`awsprovider/provisioner.go`](awsprovider/provisioner.go) | The integration: translate the spec into a Cluster API `AWSCluster`, report on it, tear it down |
 | [`awsprovider/cloudcontrollermanager.go`](awsprovider/cloudcontrollermanager.go) | The AWS cloud controller manager, run per control plane namespace and reported to HyperShift |
 | [`cmd/main.go`](cmd/main.go) | The binary: a controller-runtime manager and twenty lines of wiring |
@@ -34,6 +35,18 @@ and watches its status, the provider reconciles it and writes that status.
 back to HyperShift, which points the Cluster API `Cluster` at it. The contract asks for a
 Cluster API infrastructure object and CAPA already publishes a good one; inventing a second
 would mean reimplementing its controller too.
+
+The first two are generated from Go types in [`api/v1alpha1`](api/v1alpha1), which is worth
+copying rather than hand-writing the definitions. HyperShift copies the template's
+`spec.template.spec` into the instance's `spec` verbatim, so the two schemas have to agree
+exactly, and a structural schema may not use `$ref` to share them. Written by hand they are
+the same fields typed out twice and nothing fails loudly when a change lands in only one of
+them; defined once as `AWSClusterConfig` and embedded in both, they cannot disagree. The
+status block reuses HyperShift's own `ExternalPlatformStatus`, for the same reason.
+
+```bash
+make externalplatform-example-api           # from the repository root, after editing the types
+```
 
 So the provisioner is a translation between the first and the third, plus reporting. That is
 genuinely all of it:

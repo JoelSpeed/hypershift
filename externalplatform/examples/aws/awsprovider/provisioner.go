@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/hypershift/externalplatform/contract"
+	awsv1alpha1 "github.com/openshift/hypershift/externalplatform/examples/aws/api/v1alpha1"
 	"github.com/openshift/hypershift/externalplatform/reconcile"
 
 	hyperv1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
@@ -50,38 +51,44 @@ const (
 	// provide. The External platform is a different platform that happens to run on AWS.
 	PlatformName = "ExampleAWS"
 
-	// APIGroup is this integrator's own group, and the key an administrator registers when
-	// granting this provider access to control plane namespaces.
-	APIGroup = "aws.example.hypershift.openshift.io"
-
-	// Version is the served version of this integrator's types.
-	Version = "v1alpha1"
-
 	// TemplateResource is what a HostedCluster's platform.external.hostedClusterTemplate
 	// names. HyperShift strips the templates suffix to find awshostedclusters.
 	TemplateResource = "awshostedclustertemplates"
 )
 
-// capaAWSClusterGVK is the Cluster API infrastructure object this integration stands up.
-var capaAWSClusterGVK = schema.GroupVersionKind{
-	Group:   "infrastructure.cluster.x-k8s.io",
-	Version: "v1beta2",
-	Kind:    "AWSCluster",
-}
+var (
+	// APIGroup is this integrator's own group, and the key an administrator registers when
+	// granting this provider access to control plane namespaces. It is taken from the API
+	// package rather than spelled again, so that it cannot say one thing here and another
+	// in the custom resource definitions generated from those types.
+	APIGroup = awsv1alpha1.GroupVersion.Group
 
-// HostedClusterObjectGVK is the GVK HyperShift instantiates from the integrator's template.
-var HostedClusterObjectGVK = schema.GroupVersionKind{
-	Group:   APIGroup,
-	Version: Version,
-	Kind:    "AWSHostedCluster",
-}
+	// Version is the served version of this integrator's types.
+	Version = awsv1alpha1.GroupVersion.Version
+
+	// HostedClusterObjectGVK is the GVK HyperShift instantiates from the integrator's template.
+	HostedClusterObjectGVK = awsv1alpha1.GroupVersion.WithKind("AWSHostedCluster")
+
+	// capaAWSClusterGVK is the Cluster API infrastructure object this integration stands up.
+	capaAWSClusterGVK = schema.GroupVersionKind{
+		Group:   "infrastructure.cluster.x-k8s.io",
+		Version: "v1beta2",
+		Kind:    "AWSCluster",
+	}
+)
 
 // AddToScheme registers everything this integration reads or writes.
 //
-// Both the integration's own type and Cluster API Provider AWS's are registered as
-// unstructured, so that this binary vendors neither API. That is a choice about dependencies
-// rather than about correctness: the client treats a registered unstructured type exactly as
-// it treats a typed one.
+// The integration's own types are registered typed, because they are this repository's to
+// define and a provider that can decode its own spec into a struct is easier to read than one
+// that walks maps. Cluster API Provider AWS's are registered as unstructured, so that this
+// binary does not vendor CAPA to set six fields. That is a choice about dependencies rather
+// than about correctness: the client treats a registered unstructured type exactly as it
+// treats a typed one.
+//
+// Registering the integration's types typed does not change how the reconciler reads them. It
+// asks for the object as unstructured, and the client takes the group, version and kind off
+// the object itself in that case rather than looking them up in the scheme.
 func AddToScheme(scheme *runtime.Scheme) error {
 	for _, add := range []func(*runtime.Scheme) error{
 		corev1.AddToScheme,
@@ -89,16 +96,16 @@ func AddToScheme(scheme *runtime.Scheme) error {
 		// HostedControlPlane and ControlPlaneComponent, the only two HyperShift types an
 		// integrator touches.
 		hyperv1.AddToScheme,
+		// AWSHostedCluster and AWSHostedClusterTemplate.
+		awsv1alpha1.AddToScheme,
 	} {
 		if err := add(scheme); err != nil {
 			return fmt.Errorf("failed to build the scheme: %w", err)
 		}
 	}
-	for _, gvk := range []schema.GroupVersionKind{HostedClusterObjectGVK, capaAWSClusterGVK} {
-		scheme.AddKnownTypeWithName(gvk, &unstructured.Unstructured{})
-		scheme.AddKnownTypeWithName(gvk.GroupVersion().WithKind(gvk.Kind+"List"), &unstructured.UnstructuredList{})
-		metav1.AddToGroupVersion(scheme, gvk.GroupVersion())
-	}
+	scheme.AddKnownTypeWithName(capaAWSClusterGVK, &unstructured.Unstructured{})
+	scheme.AddKnownTypeWithName(capaAWSClusterGVK.GroupVersion().WithKind(capaAWSClusterGVK.Kind+"List"), &unstructured.UnstructuredList{})
+	metav1.AddToGroupVersion(scheme, capaAWSClusterGVK.GroupVersion())
 	return nil
 }
 
@@ -218,50 +225,30 @@ func (p *Provisioner) Deprovision(ctx context.Context, request *reconcile.Reques
 	}, nil
 }
 
-// Spec is the part of the integrator's own object this provisioner reads.
+// readSpec decodes the integrator's own object into the integrator's own type.
 //
-// Bring-your-own network only, because an example that creates VPCs needs real credentials
-// and a real account to be worth anything. CAPA will create a network if the AWSCluster asks
-// it to; adding that here is a field and a branch.
-type Spec struct {
-	Region          string
-	VPCID           string
-	SubnetIDs       []string
-	SecurityGroupID string
-	Tags            map[string]string
-}
-
-func readSpec(hostedClusterObject *unstructured.Unstructured) (Spec, error) {
-	var spec Spec
-
-	region, found, err := unstructured.NestedString(hostedClusterObject.Object, "spec", "region")
-	if err != nil {
-		return spec, fmt.Errorf("failed to read spec.region: %w", err)
+// The reconciler hands the object over as unstructured, because the contract is defined in
+// terms of fields rather than of any integrator's Go types, and this is where an integration
+// converts to the types it actually wrote. Everything below this line works on a struct.
+//
+// The required fields are checked again here even though the custom resource definition
+// already rejects an object without them. A provider is not the only thing that writes these
+// objects during a cluster's life, and one that assumes its schema was enforced fails by
+// provisioning something wrong rather than by saying so.
+func readSpec(hostedClusterObject *unstructured.Unstructured) (awsv1alpha1.AWSHostedClusterSpec, error) {
+	typed := &awsv1alpha1.AWSHostedCluster{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(hostedClusterObject.Object, typed); err != nil {
+		return awsv1alpha1.AWSHostedClusterSpec{}, fmt.Errorf("failed to read the spec: %w", err)
 	}
-	if !found || region == "" {
+	spec := typed.Spec
+
+	switch {
+	case spec.Region == "":
 		return spec, fmt.Errorf("spec.region is required")
-	}
-	spec.Region = region
-
-	if spec.VPCID, _, err = unstructured.NestedString(hostedClusterObject.Object, "spec", "vpcID"); err != nil {
-		return spec, fmt.Errorf("failed to read spec.vpcID: %w", err)
-	}
-	if spec.VPCID == "" {
+	case spec.VPCID == "":
 		return spec, fmt.Errorf("spec.vpcID is required")
-	}
-
-	if spec.SubnetIDs, _, err = unstructured.NestedStringSlice(hostedClusterObject.Object, "spec", "subnetIDs"); err != nil {
-		return spec, fmt.Errorf("failed to read spec.subnetIDs: %w", err)
-	}
-	if len(spec.SubnetIDs) == 0 {
+	case len(spec.SubnetIDs) == 0:
 		return spec, fmt.Errorf("spec.subnetIDs must name at least one subnet")
-	}
-
-	if spec.SecurityGroupID, _, err = unstructured.NestedString(hostedClusterObject.Object, "spec", "securityGroupID"); err != nil {
-		return spec, fmt.Errorf("failed to read spec.securityGroupID: %w", err)
-	}
-	if spec.Tags, _, err = unstructured.NestedStringMap(hostedClusterObject.Object, "spec", "tags"); err != nil {
-		return spec, fmt.Errorf("failed to read spec.tags: %w", err)
 	}
 	return spec, nil
 }
@@ -270,7 +257,7 @@ func readSpec(hostedClusterObject *unstructured.Unstructured) (Spec, error) {
 //
 // Only the fields this integration owns are written, so that a field CAPA or an administrator
 // set is not reverted on the next reconcile.
-func mutateAWSCluster(awsCluster *unstructured.Unstructured, spec Spec, request *reconcile.Request) error {
+func mutateAWSCluster(awsCluster *unstructured.Unstructured, spec awsv1alpha1.AWSHostedClusterSpec, request *reconcile.Request) error {
 	labels := awsCluster.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
